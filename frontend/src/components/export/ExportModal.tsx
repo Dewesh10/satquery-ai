@@ -77,22 +77,22 @@ export const ExportModal: React.FC<ExportModalProps> = ({ analytics, selectedPre
 
         {/* Export Options Grid */}
         <div className="space-y-3">
-          {/* Option 1: Official Government Encroachment Notice */}
+          {/* Option 1: Provisional Screening Log */}
           <div className="p-3.5 rounded-lg bg-[#050811] border border-blue-400/40 hover:border-blue-400 transition flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded bg-blue-500/10 border border-blue-400/40 text-blue-400">
                 <Building className="w-5 h-5" />
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-200">ISRO Bhuvan Govt Notice</div>
-                <div className="text-[10px] text-slate-400">Formal legal encroachment directive template</div>
+                <div className="text-xs font-bold text-slate-200">Provisional Screening Log</div>
+                <div className="text-[10px] text-slate-400">Pre-verification internal screening alert log</div>
               </div>
             </div>
             <button
               onClick={openGovernmentNotice}
               className="px-3 py-1.5 rounded bg-blue-500 text-white font-bold text-xs hover:bg-blue-600 transition"
             >
-              DRAFT NOTICE
+              PREVIEW LOG
             </button>
           </div>
 
