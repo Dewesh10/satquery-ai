@@ -110,7 +110,8 @@ class RasterProcessingEngine:
             "cog_tiling_strategy": "Cloud-Optimized GeoTIFF HTTP Range Requests (AWS S3)",
             "numpy_vectorized_pixels_processed": int(grid_size * grid_size),
             "classical_baseline": "Thresholded |ΔNDVI| > 0.20 Vectorized Delta",
-            "phenological_normalization_status": "EMPIRICAL_MULTIYEAR_CALIBRATED_2.5_SIGMA (2021-2023 Sentinel-2 Time-Series)",
+            "phenological_normalization_status": "INTERIM_PROVISIONAL_SAMPLE (n=4 scenes across 2021-2023)",
+            "sample_size_qualification": "n=4 scenes verifies multi-temporal pipeline execution; robust biome characterization requires n >= 30 historical scenes",
             "model_provenance": "LEVIR-CD & SpaceNet-7 Benchmark v2.1",
             "national_scale_cost_est_usd": "$420 / state / month",
             "bhuvan_nrsc_compliance": "ISRO NRSC Standard v2.1"
@@ -126,6 +127,8 @@ class RasterProcessingEngine:
                 "S2B_46RDP_20231229_0_L2A (2023-12)"
             ],
             "empirical_phenological_baseline": {
+                "sample_size_n": 4,
+                "confidence_level": "INTERIM_PROVISIONAL_PROOF_OF_PIPELINE",
                 "mu_seasonal_delta": 0.623415,
                 "sigma_seasonal_delta": 0.071193,
                 "z_threshold": 2.5

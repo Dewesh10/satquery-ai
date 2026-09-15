@@ -50,7 +50,48 @@
 
 ---
 
-## 5. Feedback Logging & Action Plan
+## 5. Outreach Message Templates
+
+### Template A: Cold Outreach to Land Revenue / Survey Officers (Tehsildars / Patwaris)
+**Subject**: *15-min feedback request: Satellite land-use screening tool for revenue survey teams*
+
+> Hi [Name],
+> 
+> I am building **SatQuery AI**, an open-source satellite change-detection tool designed to help land revenue offices screen unauthorized land conversions and boundary encroachments before sending teams out for physical ground surveys.
+> 
+> We are not trying to sell anything — we are seeking 15 minutes of feedback from an active revenue officer or survey inspector to make sure our "Field Inspection Log" format actually matches what your office needs.
+> 
+> Specifically, I’d love to ask 3 quick questions:
+> 1. What exact information (Khasra plot no, before/after photo, area in hectares) do you need before assigning a field inspection?
+> 2. How do false positives (e.g., normal crop harvest flagged as land clearing) affect your team's workflow?
+> 3. Would a simple visual "Field Card" be more useful than raw GIS vector maps?
+> 
+> Would you be open to a 15-minute call or quick chat this week?
+> 
+> Best regards,  
+> Dewesh  
+> Creator, SatQuery AI (`github.com/Dewesh10/satquery-ai`)
+
+---
+
+### Template B: Cold Outreach to Municipal GIS Cell Analysts
+**Subject**: *Feedback on open STAC satellite pipelines for municipal land monitoring*
+
+> Hi [Name],
+> 
+> I noticed your work in urban spatial planning and wanted to reach out. We’ve built **SatQuery AI**, an open-source tool that queries open STAC satellite imagery (Sentinel-2 L2A) and computes bi-temporal change masks without pre-cached numbers or vendor lock-in.
+> 
+> We are trying to understand how municipal GIS cells handle heavy cloud cover during monsoon seasons and whether direct API / WMS integration into ArcGIS / QGIS is essential.
+> 
+> Could I get 15 minutes of your expert feedback on our data pipeline and inspector dashboard?
+> 
+> Best,  
+> Dewesh  
+> `github.com/Dewesh10/satquery-ai`
+
+---
+
+## 6. Feedback Logging & Action Plan
 
 Upon conducting interviews, record responses using the following standardized feedback template:
 
