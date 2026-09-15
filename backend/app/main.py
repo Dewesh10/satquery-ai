@@ -155,30 +155,44 @@ def submit_hitl_feedback(req: HITLFeedbackRequest):
 def get_hitl_logs():
     return {"logs": hitl_service.get_feedback_logs()}
 
-# Government Notice & ISRO Bhuvan Export Endpoints
+# Government Notice & ISRO Bhuvan Export Endpoints (Supports both GET window.open and POST API calls)
+@app.get("/api/export/government-notice")
+@app.get(f"{settings.API_V1_STR}/export/government-notice")
 @app.post(f"{settings.API_V1_STR}/export/government-notice")
-def export_government_notice(req: ExportRequest):
-    analytics = raster_engine.compute_change_analytics(req.preset_id)
-    html_content = export_service.generate_government_encroachment_notice(req.preset_id, analytics)
-    return Response(content=html_content, media_type="text/html", headers={"Content-Disposition": f"inline; filename=encroachment_notice_{req.preset_id}.html"})
+def export_government_notice(preset_id: str = "dubai_urban", lang: str = "EN", req: Optional[ExportRequest] = None):
+    target_preset = req.preset_id if req else preset_id
+    target_lang = req.lang if req else lang
+    analytics = raster_engine.compute_change_analytics(target_preset)
+    html_content = export_service.generate_government_encroachment_notice(target_preset, analytics, lang=target_lang)
+    return Response(content=html_content, media_type="text/html", headers={"Content-Disposition": f"inline; filename=encroachment_notice_{target_preset}.html"})
 
+@app.get("/api/export/pdf")
+@app.get(f"{settings.API_V1_STR}/export/pdf")
+@app.post(f"{settings.API_V1_STR}/export/pdf")
+def export_pdf(preset_id: str = "dubai_urban", query: str = "Satellite Change Detection", req: Optional[ExportRequest] = None):
+    target_preset = req.preset_id if req else preset_id
+    target_query = req.query if (req and req.query) else query
+    analytics = raster_engine.compute_change_analytics(target_preset)
+    evidence = vlm_engine.synthesize_answer(target_query, target_preset, analytics)
+    html_content = export_service.generate_pdf_html(target_query, analytics, evidence)
+    return Response(content=html_content, media_type="text/html", headers={"Content-Disposition": f"inline; filename=satquery_report_{target_preset}.html"})
+
+@app.get("/api/export/geojson")
+@app.get(f"{settings.API_V1_STR}/export/geojson")
 @app.post(f"{settings.API_V1_STR}/export/geojson")
-def export_geojson(req: ExportRequest):
-    analytics = raster_engine.compute_change_analytics(req.preset_id)
+def export_geojson(preset_id: str = "dubai_urban", req: Optional[ExportRequest] = None):
+    target_preset = req.preset_id if req else preset_id
+    analytics = raster_engine.compute_change_analytics(target_preset)
     return export_service.export_geojson(analytics)
 
+@app.get("/api/export/csv")
+@app.get(f"{settings.API_V1_STR}/export/csv")
 @app.post(f"{settings.API_V1_STR}/export/csv")
-def export_csv(req: ExportRequest):
-    analytics = raster_engine.compute_change_analytics(req.preset_id)
+def export_csv(preset_id: str = "dubai_urban", req: Optional[ExportRequest] = None):
+    target_preset = req.preset_id if req else preset_id
+    analytics = raster_engine.compute_change_analytics(target_preset)
     csv_str = export_service.export_csv(analytics)
-    return Response(content=csv_str, media_type="text/csv", headers={"Content-Disposition": f"attachment; filename=satquery_{req.preset_id}.csv"})
-
-@app.post(f"{settings.API_V1_STR}/export/pdf")
-def export_pdf(req: ExportRequest):
-    analytics = raster_engine.compute_change_analytics(req.preset_id)
-    evidence = vlm_engine.synthesize_answer(req.query, req.preset_id, analytics)
-    html_content = export_service.generate_pdf_html(req.query, analytics, evidence)
-    return Response(content=html_content, media_type="text/html", headers={"Content-Disposition": f"inline; filename=satquery_report_{req.preset_id}.html"})
+    return Response(content=csv_str, media_type="text/csv", headers={"Content-Disposition": f"attachment; filename=satquery_{target_preset}.csv"})
 
 if __name__ == "__main__":
     import uvicorn
