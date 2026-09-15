@@ -59,16 +59,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Globe className="w-5 h-5 text-cyber-cyan animate-pulse" />
             <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border-2 border-black animate-ping" />
           </div>
-
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-display font-extrabold text-lg tracking-wider text-slate-100">
-                SATQUERY<span className="text-cyber-cyan">.AI</span>
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold uppercase bg-cyan-500/10 text-cyber-cyan border border-cyan-500/30">
-                v2.0
-              </span>
+              <span className="font-display font-extrabold text-sm text-slate-100 tracking-wider">SATQUERY AI</span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/20 text-cyber-cyan border border-cyan-500/40">v2.1 COG</span>
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">LAND REVENUE ICP</span>
             </div>
+            <div className="text-[10px] text-slate-400 font-mono tracking-tight">Municipal Encroachment & Disaster Monitoring Engine</div>
           </div>
         </div>
 
