@@ -50,44 +50,43 @@
 
 ---
 
-## 5. Outreach Message Templates
+## 5. Problem-First Outreach Message Templates
 
-### Template A: Cold Outreach to Land Revenue / Survey Officers (Tehsildars / Patwaris)
-**Subject**: *15-min feedback request: Satellite land-use screening tool for revenue survey teams*
+### Template A: Outreach to Land Revenue / Survey Officers (Tehsildars / Patwaris)
+**Subject**: *Quick question on how your revenue office screens unauthorized land conversion*
 
 > Hi [Name],
 > 
-> I am building **SatQuery AI**, an open-source satellite change-detection tool designed to help land revenue offices screen unauthorized land conversions and boundary encroachments before sending teams out for physical ground surveys.
+> I am conducting independent research on how state land revenue offices and survey inspectors currently prioritize physical ground inspections for unauthorized land conversions (e.g. cropland converted to unpermitted construction).
 > 
-> We are not trying to sell anything — we are seeking 15 minutes of feedback from an active revenue officer or survey inspector to make sure our "Field Inspection Log" format actually matches what your office needs.
+> I’d love to learn from your experience — specifically:
+> 1. How does your office currently spot unauthorized land-use changes before a physical inspection is assigned?
+> 2. When satellite pre-screening is used, what single piece of information is most important to a field inspector (Khasra plot no, before/after photo, or plot area in hectares)?
 > 
-> Specifically, I’d love to ask 3 quick questions:
-> 1. What exact information (Khasra plot no, before/after photo, area in hectares) do you need before assigning a field inspection?
-> 2. How do false positives (e.g., normal crop harvest flagged as land clearing) affect your team's workflow?
-> 3. Would a simple visual "Field Card" be more useful than raw GIS vector maps?
-> 
-> Would you be open to a 15-minute call or quick chat this week?
+> Would you be open to a 20-minute call or answering 2 quick questions via email this week?
 > 
 > Best regards,  
 > Dewesh  
-> Creator, SatQuery AI (`github.com/Dewesh10/satquery-ai`)
+> Open-Source Geospatial Developer (`github.com/Dewesh10/satquery-ai`)
 
 ---
 
-### Template B: Cold Outreach to Municipal GIS Cell Analysts
-**Subject**: *Feedback on open STAC satellite pipelines for municipal land monitoring*
+### Template B: Outreach to Municipal GIS Cell Analysts
+**Subject**: *Research on monsoon cloud cover protocols in municipal GIS monitoring*
 
 > Hi [Name],
 > 
-> I noticed your work in urban spatial planning and wanted to reach out. We’ve built **SatQuery AI**, an open-source tool that queries open STAC satellite imagery (Sentinel-2 L2A) and computes bi-temporal change masks without pre-cached numbers or vendor lock-in.
+> I noticed your work in urban spatial planning and wanted to ask a quick research question.
 > 
-> We are trying to understand how municipal GIS cells handle heavy cloud cover during monsoon seasons and whether direct API / WMS integration into ArcGIS / QGIS is essential.
+> We are studying how municipal GIS cells handle satellite-based boundary monitoring during heavy monsoon cloud cover (when optical imagery is obstructed for 4-8 consecutive weeks).
 > 
-> Could I get 15 minutes of your expert feedback on our data pipeline and inspector dashboard?
+> Do your teams rely on synthetic aperture radar (SAR) passes during monsoons, or do you pause satellite monitoring until clear optical passes return?
+> 
+> If you have 20 minutes for a brief conversation, I’d be very grateful for your perspective on this workflow challenge.
 > 
 > Best,  
 > Dewesh  
-> `github.com/Dewesh10/satquery-ai`
+> `github.com/Dewesh10/satquery-ai` (MIT Licensed)
 
 ---
 
