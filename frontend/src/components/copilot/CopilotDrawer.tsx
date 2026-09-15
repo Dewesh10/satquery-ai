@@ -93,15 +93,28 @@ export const CopilotDrawer: React.FC<CopilotDrawerProps> = ({
           </div>
         </form>
 
-        {/* Quick Suggestion Chip */}
-        <div className="mt-3">
-          <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">Preset Benchmark Query:</span>
+        {/* Quick Suggestion Chips & Refusal Demo Trigger */}
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">Preset Benchmark Query:</span>
+            <button
+              onClick={() => {
+                const prompt = "Show vegetation change during heavy cloud cover refusal scenario in Assam";
+                setPromptInput(prompt);
+                onExecuteQuery(prompt);
+              }}
+              className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/30 hover:bg-rose-500/20 transition flex items-center gap-1"
+              title="Test Zero-Hallucination Model Refusal Feature"
+            >
+              <span>☁️ TEST CLOUD REFUSAL</span>
+            </button>
+          </div>
           <button
             onClick={() => {
               setPromptInput(currentPreset.suggested_prompt);
               onExecuteQuery(currentPreset.suggested_prompt);
             }}
-            className="mt-1 w-full text-left p-2.5 rounded-lg bg-[#0F172A] border border-slate-700 text-xs font-sans text-cyber-cyan hover:border-cyan-400 transition line-clamp-2"
+            className="w-full text-left p-2.5 rounded-lg bg-[#0F172A] border border-slate-700 text-xs font-sans text-cyber-cyan hover:border-cyan-400 transition line-clamp-2"
           >
             "{currentPreset.suggested_prompt}"
           </button>

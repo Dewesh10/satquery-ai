@@ -83,12 +83,24 @@ export const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ analytics, onOpe
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                   GROUND-TRUTH MATCH
                 </span>
-                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/30 font-bold">
                   {analytics.ground_truth_validation.alignment_percentage}
                 </span>
               </div>
               <div className="text-[10px] text-slate-300 font-mono">
-                Agency: <span className="text-slate-200">{analytics.ground_truth_validation.official_agency}</span>
+                Agency: <span className="text-slate-200 font-bold">{analytics.ground_truth_validation.official_agency}</span>
+              </div>
+              <div className="text-[10px] text-slate-400 font-mono pt-0.5 flex items-center justify-between">
+                <span>Citation:</span>
+                <a 
+                  href={analytics.ground_truth_validation.verification_doc?.includes('CWC') ? 'https://cwc.gov.in' : 'https://waterdata.usgs.gov/nwis/uv?site_no=09421500'} 
+                  target="_blank" 
+                  rel="noreferrer"
+                  className="text-cyber-cyan underline hover:text-cyan-300 font-bold flex items-center gap-0.5"
+                >
+                  <span>{analytics.ground_truth_validation.verification_doc}</span>
+                  <span>↗</span>
+                </a>
               </div>
             </div>
           )}

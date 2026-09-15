@@ -160,34 +160,61 @@ export function extractLocationQuery(prompt: string): string {
   return cleaned.trim() || prompt;
 }
 
+const NOMINATIM_CACHE = new Map<string, { center: [number, number]; bbox: [number, number, number, number]; name: string }>();
+
 export async function geocodeWithOSM(prompt: string): Promise<{ center: [number, number]; bbox: [number, number, number, number]; name: string } | null> {
   try {
     const locQuery = extractLocationQuery(prompt);
     if (!locQuery || locQuery.length < 2) return null;
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locQuery)}&format=json&limit=1`;
+
+    if (NOMINATIM_CACHE.has(locQuery.toLowerCase())) {
+      console.log("⚡ [Geocoding Cache HIT]:", locQuery);
+      return NOMINATIM_CACHE.get(locQuery.toLowerCase())!;
+    }
+
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(locQuery)}&format=json&limit=3`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3500);
     const res = await fetch(url, {
-      headers: { 'Accept-Language': 'en-US,en' },
+      headers: {
+        'Accept-Language': 'en-US,en',
+        'User-Agent': 'SatQueryAI-SIHDemo/2.0 (contact@satquery.ai)'
+      },
       signal: controller.signal
     });
     clearTimeout(timeoutId);
     if (!res.ok) return null;
     const data = await res.json();
     if (data && data.length > 0) {
-      const lat = parseFloat(data[0].lat);
-      const lon = parseFloat(data[0].lon);
-      const displayName = data[0].display_name;
+      // Find best match matching state name in query if prompt contains a state
+      let match = data[0];
+      const promptLower = prompt.toLowerCase();
+      for (const item of data) {
+        const nameLower = (item.display_name || '').toLowerCase();
+        if (promptLower.includes('uttar pradesh') || promptLower.includes(' up ')) {
+          if (nameLower.includes('uttar pradesh')) { match = item; break; }
+        } else if (promptLower.includes('uttarakhand')) {
+          if (nameLower.includes('uttarakhand')) { match = item; break; }
+        } else if (promptLower.includes('assam')) {
+          if (nameLower.includes('assam')) { match = item; break; }
+        } else if (promptLower.includes('rajasthan')) {
+          if (nameLower.includes('rajasthan')) { match = item; break; }
+        } else if (promptLower.includes('kerala')) {
+          if (nameLower.includes('kerala')) { match = item; break; }
+        }
+      }
+
+      const lat = parseFloat(match.lat);
+      const lon = parseFloat(match.lon);
+      const displayName = match.display_name;
       let bbox: [number, number, number, number] = [lon - 0.06, lat - 0.05, lon + 0.06, lat + 0.05];
-      if (data[0].boundingbox && data[0].boundingbox.length === 4) {
-        const [sLat, nLat, wLon, eLon] = data[0].boundingbox.map(parseFloat);
+      if (match.boundingbox && match.boundingbox.length === 4) {
+        const [sLat, nLat, wLon, eLon] = match.boundingbox.map(parseFloat);
         bbox = [wLon, sLat, eLon, nLat];
       }
-      return {
-        center: [lat, lon],
-        bbox,
-        name: displayName
-      };
+      const result = { center: [lat, lon] as [number, number], bbox, name: displayName };
+      NOMINATIM_CACHE.set(locQuery.toLowerCase(), result);
+      return result;
     }
   } catch (e) {
     console.warn("OSM Nominatim geocoding lookup bypassed/timed out:", e);
