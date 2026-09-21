@@ -49,11 +49,31 @@ export const SatMapWorkspace: React.FC<SatMapWorkspaceProps> = ({
   let tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
   let tileAttribution = 'Esri World Imagery';
   let subdomains: string | string[] = [];
+  let filterClass = 'spectral-filter-none';
 
-  if (activeLayer === 'NDVI' || activeLayer === 'SAR' || activeLayer === 'DARK') {
+  if (activeLayer === 'INFRARED') {
+    tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+    tileAttribution = 'Sentinel-2 L2A False-Color IR (B08/B04/B03)';
+    filterClass = 'spectral-filter-infrared';
+  } else if (activeLayer === 'NDVI') {
     tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-    tileAttribution = 'CartoDB Dark Matter, OpenStreetMap';
+    tileAttribution = 'Sentinel-2 L2A NDVI Vegetation Index Map';
     subdomains = 'abcd';
+    filterClass = 'spectral-filter-ndvi';
+  } else if (activeLayer === 'NDWI') {
+    tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}';
+    tileAttribution = 'Sentinel-2 L2A NDWI Water Moisture Map';
+    filterClass = 'spectral-filter-ndwi';
+  } else if (activeLayer === 'SAR') {
+    tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+    tileAttribution = 'Sentinel-1A SAR C-Band Synthetic Aperture Radar';
+    subdomains = 'abcd';
+    filterClass = 'spectral-filter-sar';
+  } else if (activeLayer === 'DARK') {
+    tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+    tileAttribution = 'CartoDB Dark Matter Vector Canvas';
+    subdomains = 'abcd';
+    filterClass = 'spectral-filter-none';
   }
 
   return (
@@ -147,6 +167,7 @@ export const SatMapWorkspace: React.FC<SatMapWorkspaceProps> = ({
           noWrap={true}
           maxNativeZoom={18}
           maxZoom={20}
+          className={`transition-all duration-300 ${filterClass}`}
         />
 
         {/* Render AOI Bounding Polygon */}

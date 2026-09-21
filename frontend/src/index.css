@@ -53,6 +53,13 @@
   box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
 }
 
+/* Spectral Tile Layer Filters */
+.spectral-filter-infrared img { filter: hue-rotate(-60deg) saturate(220%) contrast(125%); }
+.spectral-filter-ndvi img { filter: hue-rotate(90deg) saturate(250%) brightness(110%); }
+.spectral-filter-ndwi img { filter: hue-rotate(170deg) saturate(180%) contrast(120%); }
+.spectral-filter-sar img { filter: grayscale(100%) contrast(250%) brightness(75%); }
+.spectral-filter-none img { filter: none; }
+
 .glow-card-cyan:hover {
   border-color: rgba(0, 240, 255, 0.6);
   box-shadow: 0 0 30px rgba(0, 240, 255, 0.3);

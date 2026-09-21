@@ -17,6 +17,7 @@ import { HITLStudio } from './components/studio/HITLStudio';
 import { DataLicensingModal } from './components/licensing/DataLicensingModal';
 import { ModelBenchmarkingModal } from './components/benchmarking/ModelBenchmarkingModal';
 import { SystemRoadmapModal } from './components/roadmap/SystemRoadmapModal';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 import { PresetLocation, QueryPlan, AnalyticsData, EvidenceData, EvidenceCard } from './types';
 import { fetchPresets, executeQuery } from './lib/api';
@@ -128,70 +129,72 @@ export function App() {
 
       {/* Main Multi-Tab Workbench Container */}
       <div className="flex flex-1 relative overflow-hidden">
-        {activeTab === 'WORKSPACE' && (
-          <>
-            {/* Left: AI Copilot Natural Language Drawer */}
-            <CopilotDrawer
-              currentPreset={currentPreset}
-              onExecuteQuery={handleExecuteQuery}
-              isProcessing={isProcessing}
-              activePlan={activePlan}
-              collapsed={leftCollapsed}
-              onToggleCollapse={() => setLeftCollapsed(!leftCollapsed)}
-            />
-
-            {/* Center: 3D Satellite Map Canvas Workspace */}
-            <div className="flex-1 relative h-full">
-              {splitScreenMode ? (
-                <SplitScreenSlider preset={currentPreset} onClose={() => setSplitScreenMode(false)} />
-              ) : (
-                <SatMapWorkspace
-                  preset={currentPreset}
-                  analytics={analytics}
-                  activeLayer={activeLayer}
-                  flyToCoords={flyToCoords}
-                  aoiPolygon={aoiPolygon}
-                  onDrawAOI={setAoiPolygon}
-                />
-              )}
-
-              {/* Data Sources & Licensing Badge */}
-              <button
-                onClick={() => setIsLicensingOpen(true)}
-                className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-xl bg-[#0B132B]/85 border border-cyan-500/30 text-cyber-cyan text-xs font-mono font-bold hover:bg-cyan-500/10 transition backdrop-blur-md shadow-cyan-glow flex items-center gap-1.5"
-              >
-                <span>🌐 SATELLITE DATA SOURCES & LICENSING</span>
-              </button>
-
-              {/* Bottom Floating Analytics Panel */}
-              <AnalyticsPanel
-                analytics={analytics}
-                onOpenHITL={() => setActiveTab('HITL_STUDIO')}
+        <ErrorBoundary fallbackTitle="WORKBENCH STUDIO EXCEPTION">
+          {activeTab === 'WORKSPACE' && (
+            <>
+              {/* Left: AI Copilot Natural Language Drawer */}
+              <CopilotDrawer
+                currentPreset={currentPreset}
+                onExecuteQuery={handleExecuteQuery}
+                isProcessing={isProcessing}
+                activePlan={activePlan}
+                collapsed={leftCollapsed}
+                onToggleCollapse={() => setLeftCollapsed(!leftCollapsed)}
               />
 
-              {/* Time Slider Timeline Scrubber */}
-              {!splitScreenMode && <TimeSlider preset={currentPreset} />}
-            </div>
+              {/* Center: 3D Satellite Map Canvas Workspace */}
+              <div className="flex-1 relative h-full">
+                {splitScreenMode ? (
+                  <SplitScreenSlider preset={currentPreset} onClose={() => setSplitScreenMode(false)} />
+                ) : (
+                  <SatMapWorkspace
+                    preset={currentPreset}
+                    analytics={analytics}
+                    activeLayer={activeLayer}
+                    flyToCoords={flyToCoords}
+                    aoiPolygon={aoiPolygon}
+                    onDrawAOI={setAoiPolygon}
+                  />
+                )}
 
-            {/* Right: Grounded Evidence Drawer */}
-            <EvidenceDrawer
-              evidence={evidence}
-              onFlyToEvidence={(coords) => {
-                soundEngine.playMapFly();
-                setFlyToCoords(coords);
-              }}
-              onInspectChip={(card) => setInspectedChip(card)}
-              collapsed={rightCollapsed}
-              onToggleCollapse={() => setRightCollapsed(!rightCollapsed)}
-            />
-          </>
-        )}
+                {/* Data Sources & Licensing Badge */}
+                <button
+                  onClick={() => setIsLicensingOpen(true)}
+                  className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-xl bg-[#0B132B]/85 border border-cyan-500/30 text-cyber-cyan text-xs font-mono font-bold hover:bg-cyan-500/10 transition backdrop-blur-md shadow-cyan-glow flex items-center gap-1.5"
+                >
+                  <span>🌐 SATELLITE DATA SOURCES & LICENSING</span>
+                </button>
 
-        {activeTab === 'BAND_MATH' && <BandMathStudio />}
-        {activeTab === 'DAG_STUDIO' && <DAGStudio plan={activePlan} />}
-        {activeTab === 'WATCHTOWER' && <SentinelWatchtower />}
-        {activeTab === 'GOVT_DIRECTIVE' && <GovernmentReportStudio selectedPreset={selectedPresetId} analytics={analytics} />}
-        {activeTab === 'HITL_STUDIO' && <HITLStudio />}
+                {/* Bottom Floating Analytics Panel */}
+                <AnalyticsPanel
+                  analytics={analytics}
+                  onOpenHITL={() => setActiveTab('HITL_STUDIO')}
+                />
+
+                {/* Time Slider Timeline Scrubber */}
+                {!splitScreenMode && <TimeSlider preset={currentPreset} />}
+              </div>
+
+              {/* Right: Grounded Evidence Drawer */}
+              <EvidenceDrawer
+                evidence={evidence}
+                onFlyToEvidence={(coords) => {
+                  soundEngine.playMapFly();
+                  setFlyToCoords(coords);
+                }}
+                onInspectChip={(card) => setInspectedChip(card)}
+                collapsed={rightCollapsed}
+                onToggleCollapse={() => setRightCollapsed(!rightCollapsed)}
+              />
+            </>
+          )}
+
+          {activeTab === 'BAND_MATH' && <BandMathStudio />}
+          {activeTab === 'DAG_STUDIO' && <DAGStudio plan={activePlan} />}
+          {activeTab === 'WATCHTOWER' && <SentinelWatchtower />}
+          {activeTab === 'GOVT_DIRECTIVE' && <GovernmentReportStudio selectedPreset={selectedPresetId} analytics={analytics} />}
+          {activeTab === 'HITL_STUDIO' && <HITLStudio />}
+        </ErrorBoundary>
       </div>
 
       {/* Export Artifacts Modal */}
