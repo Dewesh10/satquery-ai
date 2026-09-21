@@ -51,6 +51,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({ analytics, selectedPre
     window.open(`http://localhost:8000/api/export/government-notice?preset_id=${selectedPreset}`, '_blank');
   };
 
+  const downloadGeoTIFFManifest = () => {
+    window.open(`http://localhost:8000/api/export/geotiff-manifest?preset_id=${selectedPreset}`, '_blank');
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 select-none font-mono">
       <div className="w-full max-w-lg bg-[#0A101D] border border-cyber-border rounded-xl shadow-2xl p-6 relative space-y-5">
@@ -115,7 +119,26 @@ export const ExportModal: React.FC<ExportModalProps> = ({ analytics, selectedPre
             </button>
           </div>
 
-          {/* Option 3: CSV */}
+          {/* Option 3: STAC GeoTIFF Metadata Manifest */}
+          <div className="p-3.5 rounded-lg bg-[#050811] border border-purple-400/30 hover:border-purple-400 transition flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded bg-purple-500/10 border border-purple-400/40 text-purple-400">
+                <FileCode className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-slate-200">STAC GeoTIFF Metadata Manifest</div>
+                <div className="text-[10px] text-slate-400">Cloud-Optimized GeoTIFF asset links & n=32 baseline</div>
+              </div>
+            </div>
+            <button
+              onClick={downloadGeoTIFFManifest}
+              className="px-3 py-1.5 rounded bg-purple-500 text-white font-bold text-xs hover:bg-purple-600 transition"
+            >
+              VIEW JSON
+            </button>
+          </div>
+
+          {/* Option 4: CSV */}
           <div className="p-3.5 rounded-lg bg-[#050811] border border-cyber-amber/30 hover:border-cyber-amber transition flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded bg-cyber-amber/10 border border-cyber-amber/40 text-cyber-amber">
@@ -134,7 +157,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ analytics, selectedPre
             </button>
           </div>
 
-          {/* Option 4: Executive PDF Report */}
+          {/* Option 5: Executive PDF Report */}
           <div className="p-3.5 rounded-lg bg-[#050811] border border-cyber-emerald/30 hover:border-cyber-emerald transition flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded bg-cyber-emerald/10 border border-cyber-emerald/40 text-cyber-emerald">

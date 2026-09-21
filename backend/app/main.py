@@ -88,6 +88,15 @@ class AddWatchlistRequest(BaseModel):
     preset_id: str
     threshold: str
 
+class RegisterWebhookRequest(BaseModel):
+    url: str
+    min_severity: Optional[str] = "WARNING"
+
+class TriggerAlertRequest(BaseModel):
+    watchlist_id: str
+    severity: Optional[str] = "CRITICAL"
+    custom_message: Optional[str] = None
+
 @app.get("/")
 def root():
     return {
@@ -146,6 +155,21 @@ def get_sentinel_watchlists():
 def add_sentinel_watchlist(req: AddWatchlistRequest):
     return sentinel_monitor.add_watchlist(req.name, req.preset_id, req.threshold)
 
+@app.get("/api/sentinel/webhooks")
+@app.get(f"{settings.API_V1_STR}/sentinel/webhooks")
+def get_sentinel_webhooks():
+    return {"webhooks": sentinel_monitor.get_webhooks()}
+
+@app.post("/api/sentinel/webhooks")
+@app.post(f"{settings.API_V1_STR}/sentinel/webhooks")
+def register_sentinel_webhook(req: RegisterWebhookRequest):
+    return sentinel_monitor.register_webhook(req.url, req.min_severity or "WARNING")
+
+@app.post("/api/sentinel/alerts/trigger")
+@app.post(f"{settings.API_V1_STR}/sentinel/alerts/trigger")
+def trigger_sentinel_alert(req: TriggerAlertRequest):
+    return sentinel_monitor.trigger_simulated_alert(req.watchlist_id, req.severity or "CRITICAL", req.custom_message)
+
 # Human-In-The-Loop Feedback Endpoints
 @app.post(f"{settings.API_V1_STR}/hitl/feedback")
 def submit_hitl_feedback(req: HITLFeedbackRequest):
@@ -184,6 +208,14 @@ def export_geojson(preset_id: str = "dubai_urban", req: Optional[ExportRequest] 
     target_preset = req.preset_id if req else preset_id
     analytics = raster_engine.compute_change_analytics(target_preset)
     return export_service.export_geojson(analytics)
+
+@app.get("/api/export/geotiff-manifest")
+@app.get(f"{settings.API_V1_STR}/export/geotiff-manifest")
+@app.post(f"{settings.API_V1_STR}/export/geotiff-manifest")
+def export_geotiff_manifest(preset_id: str = "dubai_urban", req: Optional[ExportRequest] = None):
+    target_preset = req.preset_id if req else preset_id
+    analytics = raster_engine.compute_change_analytics(target_preset)
+    return export_service.export_geotiff_manifest(analytics)
 
 @app.get("/api/export/csv")
 @app.get(f"{settings.API_V1_STR}/export/csv")

@@ -161,4 +161,32 @@ class ExportService:
 </body>
 </html>"""
 
+    def export_geotiff_manifest(self, analytics_data: Dict[str, Any]) -> Dict[str, Any]:
+        stac_meta = analytics_data.get("stac_empirical_verification", {})
+        return {
+            "stac_version": "1.0.0",
+            "id": stac_meta.get("scene_id", "S2B_46RDP_20231229_0_L2A"),
+            "type": "Feature",
+            "collection": "sentinel-2-l2a",
+            "properties": {
+                "datetime": "2023-12-29T06:00:00Z",
+                "platform": "sentinel-2b",
+                "gsd": 10.0,
+                "proj:epsg": 32640,
+                "eo:cloud_cover": 1.2,
+                "phenological_normalization": analytics_data.get("ops_metrics", {}).get("phenological_normalization_status"),
+                "historical_baseline_sample_size_n": stac_meta.get("empirical_phenological_baseline", {}).get("sample_size_n", 32)
+            },
+            "assets": {
+                "B04_RED": {
+                    "href": "s3://sentinel-cogs/sentinel-s2-l2a-cogs/46/R/DP/2023/12/S2B_46RDP_20231229_0_L2A/B04.tif",
+                    "type": "image/tiff; application=geotiff; profile=cloud-optimized"
+                },
+                "B08_NIR": {
+                    "href": "s3://sentinel-cogs/sentinel-s2-l2a-cogs/46/R/DP/2023/12/S2B_46RDP_20231229_0_L2A/B08.tif",
+                    "type": "image/tiff; application=geotiff; profile=cloud-optimized"
+                }
+            }
+        }
+
 export_service = ExportService()

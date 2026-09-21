@@ -90,6 +90,25 @@
 
 ---
 
+### Template C: Outreach to State Disaster Management Authority (ASDMA / District Collectorate)
+**Subject**: *Research query on Sentinel-1 SAR flood pre-screening disclaimers & field workflows*
+
+> Hi [Name],
+> 
+> I am conducting open-source research on how District Disaster Management Authorities and CWC hydrometric cells cross-verify automated satellite flood inundation alerts during monsoon surges (such as the Brahmaputra river basin inundations).
+> 
+> We’ve benchmarked Sentinel-1 Synthetic Aperture Radar (SAR) pass telemetry against official CWC bulletin flood figures, and would love your 15-minute perspective on two field questions:
+> 1. When receiving automated satellite inundation estimates (+114 sq km), what legal disclaimer or pre-verification tag is required before dispatching local district survey teams?
+> 2. Do field relief teams prefer receiving raw GeoJSON vector polygon boundaries or print-ready PDF screening logs with Khasra cadastral overlays?
+> 
+> Would you be open to a 20-minute call or brief email exchange this week?
+> 
+> Warm regards,  
+> Dewesh  
+> Lead Open-Source Developer, SatQuery AI (`github.com/Dewesh10/satquery-ai`)
+
+---
+
 ## 6. Feedback Logging & Action Plan
 
 Upon conducting interviews, record responses using the following standardized feedback template:
