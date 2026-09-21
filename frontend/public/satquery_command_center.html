@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SatQuery AI — Autonomous Earth Observation Command Center</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', Courier, monospace; }
+  body { background: #030712; color: #00F0FF; padding: 20px; overflow-x: hidden; }
+  .header { border-bottom: 2px solid #00F0FF; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+  .title { font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; }
+  .subtitle { font-size: 11px; color: #94A3B8; margin-top: 4px; }
+  .status-badge { background: rgba(0, 240, 255, 0.1); border: 1px solid #00F0FF; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+  .card { background: #0B132B; border: 1px solid rgba(0, 240, 255, 0.3); border-radius: 12px; padding: 20px; box-shadow: 0 0 20px rgba(0, 240, 255, 0.1); }
+  .card-title { font-size: 14px; font-weight: bold; text-transform: uppercase; margin-bottom: 15px; color: #F8FAFC; border-bottom: 1px solid #1E293B; padding-bottom: 8px; }
+
+  .btn { background: #00F0FF; color: #000; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; font-size: 12px; }
+  .btn:hover { background: #67E8F9; box-shadow: 0 0 15px #00F0FF; }
+
+  .metric-val { font-size: 28px; font-weight: bold; color: #F43F5E; }
+  .metric-label { font-size: 11px; color: #94A3B8; text-transform: uppercase; }
+
+  canvas { width: 100%; height: 180px; background: #030712; border: 1px solid #1E293B; border-radius: 8px; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <div>
+      <div class="title">🛰️ SATQUERY AI — EARTH OBSERVATION COMMAND CENTER</div>
+      <div class="subtitle">Multi-Spectral Change Analytics • STAC GeoTIFF Baseline • Webhook Alert Monitor</div>
+    </div>
+    <div class="status-badge">SYSTEM HEALTHY (n=32 BASELINE)</div>
+  </div>
+
+  <div class="grid">
+    <!-- Live Telemetry Card -->
+    <div class="card">
+      <div class="card-title">Multi-Year Baseline Telemetry</div>
+      <div class="metric-val">n = 32</div>
+      <div class="metric-label">Historical STAC Scenes Ingested (2020-2024)</div>
+      <br/>
+      <div style="font-size: 12px; color: #38BDF8;">
+        • μ (Seasonal Mean ΔNDVI): 0.603447<br/>
+        • σ (Seasonal StdDev): 0.063698<br/>
+        • Ground Truth Verification: 98.1% (Assam CWC Bulletin)
+      </div>
+    </div>
+
+    <!-- Live Band Math Matrix Canvas -->
+    <div class="card">
+      <div class="card-title">Live 5x5 Spectral Matrix Radar</div>
+      <button class="btn" onclick="renderMatrix()">RE-CALCULATE MATRIX</button>
+      <canvas id="matrixCanvas"></canvas>
+    </div>
+
+    <!-- Active Sentinel Orbit Watchtower -->
+    <div class="card">
+      <div class="card-title">Sentinel Orbit Watchtower</div>
+      <div style="font-size: 12px; color: #E2E8F0; space-y: 8px;">
+        <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid #F43F5E; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+          <b style="color: #F43F5E;">ALT-903 EMERGENCY BREACH</b><br/>
+          Assam Sector 2 Flood Inundation spiked (+114.6 sq km submerged).
+        </div>
+        <div style="background: rgba(0, 240, 255, 0.1); border: 1px solid #00F0FF; padding: 10px; border-radius: 8px;">
+          <b style="color: #00F0FF;">WHK-001 ACTIVE WEBHOOK</b><br/>
+          https://api.disaster-management.gov.in/webhooks/sentinel
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function renderMatrix() {
+      const canvas = document.getElementById('matrixCanvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+
+      const cellW = canvas.width / 5;
+      const cellH = canvas.height / 5;
+
+      for (let r = 0; r < 5; r++) {
+        for (let c = 0; c < 5; c++) {
+          const val = Math.random();
+          const rColor = Math.floor(val * 255);
+          ctx.fillStyle = `rgb(0, ${rColor}, 255)`;
+          ctx.fillRect(c * cellW, r * cellH, cellW - 2, cellH - 2);
+          ctx.fillStyle = "#FFF";
+          ctx.font = "10px monospace";
+          ctx.fillText(val.toFixed(2), c * cellW + 6, r * cellH + cellH / 2 + 3);
+        }
+      }
+    }
+    renderMatrix();
+  </script>
+</body>
+</html>

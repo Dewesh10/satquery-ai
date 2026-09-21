@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, Cpu, CheckCircle2, Loader2, Sparkles, Terminal, Activity, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Send, Cpu, CheckCircle2, Loader2, Sparkles, Terminal, Activity, ChevronLeft, ChevronRight, Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 import { QueryPlan, PresetLocation } from '../../types';
 
 interface CopilotDrawerProps {
@@ -20,10 +20,61 @@ export const CopilotDrawer: React.FC<CopilotDrawerProps> = ({
   onToggleCollapse
 }) => {
   const [promptInput, setPromptInput] = useState(currentPreset.suggested_prompt);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   React.useEffect(() => {
     setPromptInput(currentPreset.suggested_prompt);
   }, [currentPreset.suggested_prompt]);
+
+  const toggleVoiceInput = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Web Speech Recognition API is not supported in this browser.");
+      return;
+    }
+
+    if (isListening) {
+      setIsListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+    recognition.onerror = () => setIsListening(false);
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setPromptInput(transcript);
+    };
+
+    recognition.start();
+  };
+
+  const toggleSpeechSynthesis = (textToSpeak: string) => {
+    if (!('speechSynthesis' in window)) {
+      alert("Text-to-speech API is not supported in this browser.");
+      return;
+    }
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.rate = 1.0;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,20 +111,49 @@ export const CopilotDrawer: React.FC<CopilotDrawerProps> = ({
       </button>
 
       {/* Drawer Header */}
-      <div className="p-4 border-b border-cyber-border flex items-center gap-2">
-        <Cpu className="w-5 h-5 text-cyber-cyan" />
-        <span className="font-display font-bold text-sm text-slate-100 uppercase tracking-wider">
-          QUERY PLANNER & COPILOT
-        </span>
+      <div className="p-4 border-b border-cyber-border flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Cpu className="w-5 h-5 text-cyber-cyan" />
+          <span className="font-display font-bold text-sm text-slate-100 uppercase tracking-wider">
+            QUERY PLANNER & VOICE COPILOT
+          </span>
+        </div>
+
+        {/* Read Aloud Toggle */}
+        <button
+          onClick={() => toggleSpeechSynthesis("SatQuery AI autonomous satellite copilot ready for queries.")}
+          className={`p-1.5 rounded transition ${isSpeaking ? 'bg-rose-500/20 text-rose-400' : 'text-slate-400 hover:text-white'}`}
+          title="Read Aloud Voice Assistant"
+        >
+          {isSpeaking ? <VolumeX className="w-4 h-4 animate-pulse" /> : <Volume2 className="w-4 h-4" />}
+        </button>
       </div>
 
       {/* Query Input & Suggested Prompts */}
       <div className="p-4 border-b border-cyber-border bg-[#030712]/50">
         <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-          <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            ASK SATELLITE COPILOT:
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              ASK SATELLITE COPILOT:
+            </label>
+
+            {/* Voice Input Button */}
+            <button
+              type="button"
+              onClick={toggleVoiceInput}
+              className={`p-1.5 rounded-lg border text-xs font-mono font-bold flex items-center gap-1 transition ${
+                isListening
+                  ? 'bg-rose-500/20 border-rose-500/50 text-rose-400 animate-pulse'
+                  : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-white'
+              }`}
+              title="Speak Query via Microphone"
+            >
+              {isListening ? <MicOff className="w-3.5 h-3.5 text-rose-400" /> : <Mic className="w-3.5 h-3.5 text-cyber-cyan" />}
+              <span>{isListening ? 'LISTENING...' : 'VOICE'}</span>
+            </button>
+          </div>
+
           <div className="relative">
             <textarea
               rows={3}
@@ -93,84 +173,55 @@ export const CopilotDrawer: React.FC<CopilotDrawerProps> = ({
           </div>
         </form>
 
-        {/* Quick Suggestion Chips & Refusal Demo Trigger */}
+        {/* Quick Suggestion Chips */}
         <div className="mt-3 space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono text-slate-400 uppercase font-bold">Preset Benchmark Query:</span>
-            <button
-              onClick={() => {
-                const prompt = "Show vegetation change during heavy cloud cover refusal scenario in Assam";
-                setPromptInput(prompt);
-                onExecuteQuery(prompt);
-              }}
-              className="text-[10px] font-mono font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/30 hover:bg-rose-500/20 transition flex items-center gap-1"
-              title="Test Zero-Hallucination Model Refusal Feature"
-            >
-              <span>☁️ TEST CLOUD REFUSAL</span>
-            </button>
           </div>
+
           <button
-            onClick={() => {
-              setPromptInput(currentPreset.suggested_prompt);
-              onExecuteQuery(currentPreset.suggested_prompt);
-            }}
-            className="w-full text-left p-2.5 rounded-lg bg-[#0F172A] border border-slate-700 text-xs font-sans text-cyber-cyan hover:border-cyan-400 transition line-clamp-2"
+            onClick={() => setPromptInput(currentPreset.suggested_prompt)}
+            className="w-full text-left p-2.5 rounded-xl bg-[#0B132B] border border-cyber-border/60 hover:border-cyber-cyan/60 text-slate-300 text-xs font-mono transition line-clamp-2"
           >
             "{currentPreset.suggested_prompt}"
           </button>
         </div>
       </div>
 
-      {/* AI Transparency execution trace DAG */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-display font-bold text-slate-200 flex items-center gap-1.5">
-            <Activity className="w-4 h-4 text-cyber-cyan" />
-            EXECUTION DAG TRACE
-          </span>
-          {activePlan && (
-            <span className="text-[10px] font-mono text-slate-400">
-              {activePlan.execution_time_ms}ms
-            </span>
-          )}
-        </div>
+      {/* Query Execution Plan DAG View */}
+      <div className="flex-1 p-4 overflow-y-auto space-y-4 font-mono text-xs">
+        {activePlan ? (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-[11px] text-slate-400 border-b border-slate-800 pb-2">
+              <span className="flex items-center gap-1.5">
+                <Terminal className="w-3.5 h-3.5 text-cyber-cyan" />
+                EXECUTION DAG PLAN
+              </span>
+              <span className="text-emerald-400 font-bold">{activePlan.intent}</span>
+            </div>
 
-        {isProcessing && (
-          <div className="p-4 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyber-cyan text-xs font-sans flex items-center gap-3 animate-pulse">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <div>
-              <div className="font-bold">COMPILING GEOSPATIAL DAG...</div>
-              <div className="text-[10px] text-slate-400">Fetching STAC scenes & running CV pipelines</div>
+            <div className="space-y-2">
+              {activePlan.dag_steps.map((step, idx) => (
+                <div
+                  key={idx}
+                  className="p-3 rounded-xl bg-[#030712] border border-slate-800 flex items-start gap-2.5 transition hover:border-cyber-cyan/40"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-cyber-cyan shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <div className="font-bold text-slate-200">{step.name}</div>
+                    <div className="text-[11px] text-slate-400">Tool: {step.tool} • Status: {step.status}</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        )}
-
-        {activePlan ? (
-          <div className="space-y-2.5">
-            {activePlan.dag_steps.map((step) => (
-              <div
-                key={step.step_id}
-                className="p-3 rounded-xl bg-[#0F172A]/70 border border-cyber-border text-xs font-sans space-y-1"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span className="font-semibold text-slate-200">{step.name}</span>
-                  </div>
-                  <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/30">
-                    #{step.step_id}
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-400 font-sans">
-                  Tool: <span className="text-slate-300 font-mono">{step.tool}</span>
-                </div>
-              </div>
-            ))}
-          </div>
         ) : (
-          <div className="p-6 text-center text-xs font-sans text-slate-500 border border-dashed border-slate-800 rounded-xl">
-            <Terminal className="w-6 h-6 mx-auto mb-2 opacity-40 text-cyber-cyan" />
-            Enter a prompt above to compile natural language into structured geospatial operations.
+          <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500 space-y-2">
+            <Activity className="w-8 h-8 text-slate-600 animate-pulse" />
+            <div className="text-xs font-bold text-slate-400 uppercase">NO ACTIVE DAG PLAN</div>
+            <p className="text-[11px] max-w-xs text-slate-500 font-sans">
+              Enter a prompt above or use voice input to generate a multi-step satellite processing plan.
+            </p>
           </div>
         )}
       </div>

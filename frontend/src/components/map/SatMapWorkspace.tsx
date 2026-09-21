@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Polygon, GeoJSON, useMap } from 'react-leaflet
 import L from 'leaflet';
 import { PresetLocation, AnalyticsData } from '../../types';
 import { Crosshair, Move, Compass, Shield, Radio } from 'lucide-react';
+import { soundEngine } from '../../lib/sound';
 
 interface SatMapWorkspaceProps {
   preset: PresetLocation;
@@ -104,7 +105,7 @@ export const SatMapWorkspace: React.FC<SatMapWorkspaceProps> = ({
         <div><span className="text-slate-400">SENSOR:</span> <span className="text-emerald-400 font-bold">{preset.sensors[0]}</span></div>
       </div>
 
-      {/* AOI Drawing Toolbar */}
+      {/* AOI Drawing & Cinematic Flight Toolbar */}
       <div className="absolute top-16 left-4 z-20 flex flex-col gap-2 bg-[#0B132B]/90 border border-cyan-500/30 backdrop-blur-xl p-2 rounded-xl shadow-2xl">
         <button
           onClick={() => {
@@ -118,6 +119,34 @@ export const SatMapWorkspace: React.FC<SatMapWorkspaceProps> = ({
         >
           <Move className="w-4 h-4 text-cyber-cyan" />
           <span className="hidden sm:inline">{isDrawing ? 'DRAWING AOI...' : 'DRAW AOI'}</span>
+        </button>
+
+        <button
+          onClick={() => {
+            // Trigger 3D Flight Camera Orbit
+            const waypoints: [number, number][] = [
+              [26.25, 92.60], // Assam Flood Basin
+              [24.99, 55.16], // Dubai Jebel Ali Corridor
+              [53.50, 9.95],  // Hamburg Port Logistics
+              preset.center   // Return to center
+            ];
+            let idx = 0;
+            const flightInterval = setInterval(() => {
+              if (idx < waypoints.length) {
+                soundEngine.playMapFly();
+                // MapController flyTo handler will smoothly pan Leaflet canvas
+                window.dispatchEvent(new CustomEvent('satquery_flyto', { detail: waypoints[idx] }));
+                idx++;
+              } else {
+                clearInterval(flightInterval);
+              }
+            }, 3500);
+          }}
+          className="p-2.5 rounded-lg bg-cyber-cyan/10 border border-cyber-cyan/40 text-cyber-cyan hover:bg-cyan-500/20 font-mono text-xs flex items-center gap-2 transition font-bold shadow-cyan-glow"
+          title="Start 3D Cinematic Orbit Camera Flight"
+        >
+          <Radio className="w-4 h-4 text-cyber-cyan animate-pulse" />
+          <span className="hidden sm:inline">3D FLIGHT STORYTELLER</span>
         </button>
 
         {aoiPolygon && (
