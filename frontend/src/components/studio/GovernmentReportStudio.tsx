@@ -11,7 +11,7 @@ export const GovernmentReportStudio: React.FC<GovernmentReportStudioProps> = ({ 
   const [workflowState, setWorkflowState] = useState<'DRAFT' | 'OFFICER_REVIEW' | 'FIELD_DISPATCHED' | 'FILED_ON_BHUVAN'>('DRAFT');
 
   const openGovernmentNotice = () => {
-    window.open(`http://localhost:8000/api/export/government-notice?preset_id=${selectedPreset}`, '_blank');
+    window.open(`http://localhost:8000/api/export/government-notice?preset_id=${selectedPreset}&api_key=satquery-demo-key-2024`, '_blank');
   };
 
   return (

@@ -2,9 +2,9 @@ from typing import Dict, List, Any
 
 class VisionPipelineService:
     def run_bitemporal_change_detection(self, preset_id: str) -> Dict[str, Any]:
-        """Bi-temporal change detection pipeline using Siamese Convolutional/Transformer feature diffing."""
+        """Placeholder/simulated bi-temporal change detection output (model integration pending)."""
         return {
-            "model": "SatQuery-SiameseDiff-v2",
+            "model": "SIMULATED — SiameseDiff-v2 model integration pending",
             "modality": "OPTICAL_BITEMPORAL",
             "input_resolution": "1024x1024 chips @ 10m GSD",
             "detected_change_pixels": 42800,
@@ -17,9 +17,9 @@ class VisionPipelineService:
         }
 
     def run_segmentation(self, preset_id: str) -> Dict[str, Any]:
-        """Semantic segmentation into land cover classes (Urban, Water, Forest, Agriculture, Bare Soil)."""
+        """Placeholder/simulated semantic segmentation output (model integration pending)."""
         return {
-            "model": "SatQuery-U-Net-ResNet101",
+            "model": "SIMULATED — U-Net-ResNet101 model integration pending",
             "classes": {
                 "Urban / Built-up": 44.2,
                 "Water Bodies": 18.5,
@@ -31,9 +31,9 @@ class VisionPipelineService:
         }
 
     def run_object_detection(self, preset_id: str) -> Dict[str, Any]:
-        """Object detection pipeline for infrastructure, vessels, aircraft, and oil tanks."""
+        """Placeholder/simulated object detection output (model integration pending)."""
         return {
-            "model": "SatQuery-YOLO-World-Geo",
+            "model": "SIMULATED — YOLO-World-Geo model integration pending",
             "detections_count": 148,
             "classes_detected": ["Container Ship", "Oil Tanker", "Berth Infrastructure", "Crane Assembly"],
             "average_confidence": 0.964

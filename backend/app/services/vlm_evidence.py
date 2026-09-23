@@ -4,7 +4,7 @@ from app.core.data_store import data_store
 
 class VLMEvidenceEngine:
     def synthesize_answer(self, prompt: str, preset_id: str, analytics: Dict[str, Any], lang: str = "EN") -> Dict[str, Any]:
-        """Generates evidence-backed answers in English, Hindi, or Assamese with spatial provenance."""
+        """Generates templated multilingual evidence summaries (EN, HI, AS) from preset spatial metadata."""
         
         scenes = data_store.search_scenes(preset_id=preset_id)
         scene_pre = scenes[0] if len(scenes) > 0 else {}
@@ -106,7 +106,7 @@ class VLMEvidenceEngine:
                 "timestamp": scene_post.get("datetime", "2024-02-20"),
                 "coordinates": scene_post.get("center", [25.08, 55.20]),
                 "metric": analytics.get("primary_metric_value", "Change Detected"),
-                "confidence": "96.4%",
+                "confidence": "N/A — Templated Summary",
                 "thumbnail": "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=400&q=80",
                 "type": "CHANGE_HIGHLIGHT"
             }
@@ -119,7 +119,7 @@ class VLMEvidenceEngine:
                 "scenes_referenced": [scene_pre.get("id"), scene_post.get("id")],
                 "sensors": [scene_pre.get("sensor"), scene_post.get("sensor")],
                 "timestamps": [scene_pre.get("datetime"), scene_post.get("datetime")],
-                "verification_status": "VERIFIED_EVIDENCE_GROUNDED"
+                "verification_status": "TEMPLATED_SUMMARY"
             },
             "evidence_cards": evidence_cards
         }

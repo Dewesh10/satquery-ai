@@ -30,7 +30,7 @@ def generate_n32_historical_baseline():
     
     result = {
         "sample_size_n": len(scenes_assam),
-        "confidence_level": "CALIBRATED_HISTORICAL_BASELINE",
+        "confidence_level": "SIMULATED_BASELINE (demo data — real calibration pending)",
         "time_range": "2020-01-15 to 2022-08-15",
         "mu_seasonal_delta": round(mu_seasonal, 6),
         "sigma_seasonal_delta": round(sigma_seasonal, 6),

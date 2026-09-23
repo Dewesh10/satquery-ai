@@ -9,15 +9,16 @@ import { TimeSlider } from './components/timeline/TimeSlider';
 import { ExportModal } from './components/export/ExportModal';
 import { PixelChipMagnifier } from './components/inspector/PixelChipMagnifier';
 
-import { BandMathStudio } from './components/studio/BandMathStudio';
-import { DAGStudio } from './components/studio/DAGStudio';
-import { SentinelWatchtower } from './components/studio/SentinelWatchtower';
-import { GovernmentReportStudio } from './components/studio/GovernmentReportStudio';
-import { HITLStudio } from './components/studio/HITLStudio';
-import { DataLicensingModal } from './components/licensing/DataLicensingModal';
-import { ModelBenchmarkingModal } from './components/benchmarking/ModelBenchmarkingModal';
-import { SystemRoadmapModal } from './components/roadmap/SystemRoadmapModal';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+
+const BandMathStudio = React.lazy(() => import('./components/studio/BandMathStudio').then(m => ({ default: m.BandMathStudio })));
+const DAGStudio = React.lazy(() => import('./components/studio/DAGStudio').then(m => ({ default: m.DAGStudio })));
+const SentinelWatchtower = React.lazy(() => import('./components/studio/SentinelWatchtower').then(m => ({ default: m.SentinelWatchtower })));
+const GovernmentReportStudio = React.lazy(() => import('./components/studio/GovernmentReportStudio').then(m => ({ default: m.GovernmentReportStudio })));
+const HITLStudio = React.lazy(() => import('./components/studio/HITLStudio').then(m => ({ default: m.HITLStudio })));
+const DataLicensingModal = React.lazy(() => import('./components/licensing/DataLicensingModal').then(m => ({ default: m.DataLicensingModal })));
+const ModelBenchmarkingModal = React.lazy(() => import('./components/benchmarking/ModelBenchmarkingModal').then(m => ({ default: m.ModelBenchmarkingModal })));
+const SystemRoadmapModal = React.lazy(() => import('./components/roadmap/SystemRoadmapModal').then(m => ({ default: m.SystemRoadmapModal })));
 
 import { PresetLocation, QueryPlan, AnalyticsData, EvidenceData, EvidenceCard } from './types';
 import { fetchPresets, executeQuery } from './lib/api';
@@ -189,11 +190,13 @@ export function App() {
             </>
           )}
 
-          {activeTab === 'BAND_MATH' && <BandMathStudio />}
-          {activeTab === 'DAG_STUDIO' && <DAGStudio plan={activePlan} />}
-          {activeTab === 'WATCHTOWER' && <SentinelWatchtower />}
-          {activeTab === 'GOVT_DIRECTIVE' && <GovernmentReportStudio selectedPreset={selectedPresetId} analytics={analytics} />}
-          {activeTab === 'HITL_STUDIO' && <HITLStudio />}
+          <React.Suspense fallback={<div className="w-full h-full bg-[#030712] flex items-center justify-center font-mono text-xs text-cyber-cyan">LOADING STUDIO MODULE...</div>}>
+            {activeTab === 'BAND_MATH' && <BandMathStudio />}
+            {activeTab === 'DAG_STUDIO' && <DAGStudio plan={activePlan} />}
+            {activeTab === 'WATCHTOWER' && <SentinelWatchtower />}
+            {activeTab === 'GOVT_DIRECTIVE' && <GovernmentReportStudio selectedPreset={selectedPresetId} analytics={analytics} />}
+            {activeTab === 'HITL_STUDIO' && <HITLStudio />}
+          </React.Suspense>
         </ErrorBoundary>
       </div>
 

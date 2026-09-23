@@ -5,6 +5,7 @@ class Settings:
     VERSION: str = "2.0.0"
     API_V1_STR: str = "/api"
     DEBUG: bool = True
+    API_KEY: str = os.getenv("SATQUERY_API_KEY", "satquery-demo-key-2024")
     
     PRESETS = {
         "dubai_urban": {

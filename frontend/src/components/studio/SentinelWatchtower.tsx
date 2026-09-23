@@ -36,7 +36,7 @@ export const SentinelWatchtower: React.FC = () => {
     try {
       const res = await fetch('http://localhost:8000/api/sentinel/webhooks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': 'satquery-demo-key-2024' },
         body: JSON.stringify({ url: webhookUrl, min_severity: 'WARNING' })
       });
       if (res.ok) {
@@ -54,7 +54,7 @@ export const SentinelWatchtower: React.FC = () => {
     try {
       const res = await fetch('http://localhost:8000/api/sentinel/alerts/trigger', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': 'satquery-demo-key-2024' },
         body: JSON.stringify({
           watchlist_id: 'AOI-WATCH-02',
           severity: 'CRITICAL',

@@ -44,15 +44,15 @@ export const ExportModal: React.FC<ExportModalProps> = ({ analytics, selectedPre
   };
 
   const openPDFReport = () => {
-    window.open(`http://localhost:8000/api/export/pdf?preset_id=${selectedPreset}`, '_blank');
+    window.open(`http://localhost:8000/api/export/pdf?preset_id=${selectedPreset}&api_key=satquery-demo-key-2024`, '_blank');
   };
 
   const openGovernmentNotice = () => {
-    window.open(`http://localhost:8000/api/export/government-notice?preset_id=${selectedPreset}`, '_blank');
+    window.open(`http://localhost:8000/api/export/government-notice?preset_id=${selectedPreset}&api_key=satquery-demo-key-2024`, '_blank');
   };
 
   const downloadGeoTIFFManifest = () => {
-    window.open(`http://localhost:8000/api/export/geotiff-manifest?preset_id=${selectedPreset}`, '_blank');
+    window.open(`http://localhost:8000/api/export/geotiff-manifest?preset_id=${selectedPreset}&api_key=satquery-demo-key-2024`, '_blank');
   };
 
   return (
@@ -127,7 +127,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ analytics, selectedPre
               </div>
               <div>
                 <div className="text-xs font-bold text-slate-200">STAC GeoTIFF Metadata Manifest</div>
-                <div className="text-[10px] text-slate-400">Cloud-Optimized GeoTIFF asset links & n=32 baseline</div>
+                <div className="text-[10px] text-slate-400">Cloud-Optimized GeoTIFF asset links & simulated n=32 baseline</div>
               </div>
             </div>
             <button

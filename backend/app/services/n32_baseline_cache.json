@@ -1,6 +1,7 @@
 {
   "sample_size_n": 32,
-  "confidence_level": "CALIBRATED_HISTORICAL_BASELINE",
+  "confidence_level": "SIMULATED_BASELINE (demo data — real calibration pending)",
+  "baseline_status": "SIMULATED (np.random.normal baseline — live STAC ingestion pending)",
   "time_range": "2020-01-15 to 2022-08-15",
   "mu_seasonal_delta": 0.603447,
   "sigma_seasonal_delta": 0.063698,

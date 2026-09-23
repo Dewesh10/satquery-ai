@@ -55,6 +55,7 @@ class RasterProcessingEngine:
         if preset_id == "heavy_cloud_failure":
             return {
                 "preset_id": preset_id,
+                "data_source": "SIMULATED",
                 "primary_metric_label": "Model Refusal / Insufficient Data",
                 "primary_metric_value": "INSUFFICIENT DATA",
                 "percentage_change": "0.0%",
@@ -76,8 +77,9 @@ class RasterProcessingEngine:
             }
 
         base_stats = self._get_base_preset_stats(preset_id)
+        base_stats["data_source"] = "SIMULATED"
         
-        # Real Band Math & Phenological Normalization
+        # Band Math & Phenological Normalization (Simulated pixel array inputs)
         grid_size = 100 # 100x100 pixel window @ 10m GSD (1 sq km)
         red_pre = np.random.uniform(0.05, 0.20, (grid_size, grid_size))
         nir_pre = np.random.uniform(0.30, 0.60, (grid_size, grid_size))
@@ -107,19 +109,20 @@ class RasterProcessingEngine:
 
         ops_metrics = {
             "compute_cost_usd": 0.0004, # COG Range Request sub-window query cost
-            "cog_tiling_strategy": "Cloud-Optimized GeoTIFF HTTP Range Requests (AWS S3)",
+            "cog_tiling_strategy": "SIMULATED (Cloud-Optimized GeoTIFF HTTP Range Request pipeline architecture)",
             "numpy_vectorized_pixels_processed": int(grid_size * grid_size),
             "classical_baseline": "Thresholded |ΔNDVI| > 0.20 Vectorized Delta",
-            "phenological_normalization_status": "CALIBRATED_HISTORICAL_BASELINE (n=32 scenes across 2020-2024)",
-            "sample_size_qualification": "n=32 historical scenes across 2020-2024 ingested; fully calibrated multi-year phenological mean and stddev computed per biome",
-            "model_provenance": "LEVIR-CD & SpaceNet-7 Benchmark v2.1",
+            "phenological_normalization_status": "SIMULATED_BASELINE (demo data — real calibration pending)",
+            "sample_size_qualification": "n=32 simulated scenes; real multi-temporal STAC baseline calibration pending across biomes",
+            "model_provenance": "LEVIR-CD & SpaceNet-7 Benchmark v2.1 (Specification)",
             "national_scale_cost_est_usd": "$420 / state / month",
             "bhuvan_nrsc_compliance": "ISRO NRSC Standard v2.1"
         }
 
-        # Empirical Multi-Year STAC GeoTIFF Baseline Record (AWS Element84 Sentinel-2 2020-2024 scenes)
+        # Simulated Baseline Record (AWS Element84 Sentinel-2 2020-2024 scenes)
         stac_empirical_verification = {
             "scene_id": "S2B_46RDP_20231229_0_L2A",
+            "verification_status": "SIMULATED_PROVENANCE_SPECIFICATION (demo data — live COG extraction pending)",
             "multiyear_baseline_scenes_count": 32,
             "multiyear_baseline_scenes": [
                 "S2A_46RDP_20200115_0_L2A (2020-01)",
@@ -134,7 +137,7 @@ class RasterProcessingEngine:
             ],
             "empirical_phenological_baseline": {
                 "sample_size_n": 32,
-                "confidence_level": "CALIBRATED_HISTORICAL_BASELINE",
+                "confidence_level": "SIMULATED_BASELINE (demo data — real calibration pending)",
                 "mu_seasonal_delta": 0.603447,
                 "sigma_seasonal_delta": 0.063698,
                 "z_threshold": 2.5
@@ -175,30 +178,33 @@ class RasterProcessingEngine:
     def _get_ground_truth_validation(self, preset_id: str) -> Dict[str, Any]:
         if preset_id == "assam_flood":
             return {
+                "validation_status": "illustrative_validation_target (unverified benchmark comparison)",
                 "official_agency": "Central Water Commission (CWC) & NDMA Bulletin",
                 "official_metric_name": "Assam Flood Inundation Extent",
                 "satquery_value": "114.6 sq km",
                 "official_value": "112.4 sq km",
-                "alignment_percentage": "98.1% Ground-Truth Match",
-                "verification_doc": "CWC Flood Bulletin #ASM-2023-07"
+                "alignment_percentage": "98.1% Illustrative Target Match",
+                "verification_doc": "CWC Flood Bulletin #ASM-2023-07 (Target Reference)"
             }
         elif preset_id == "lake_mead":
             return {
+                "validation_status": "illustrative_validation_target (unverified benchmark comparison)",
                 "official_agency": "USGS Water Resources National Gauge #09421500",
                 "official_metric_name": "Reservoir Water Elevation",
                 "satquery_value": "1,024.1 ft elevation",
                 "official_value": "1,023.8 ft elevation",
-                "alignment_percentage": "99.7% Ground-Truth Match",
-                "verification_doc": "USGS Gauge Report Sep 2023"
+                "alignment_percentage": "99.7% Illustrative Target Match",
+                "verification_doc": "USGS Gauge Report Sep 2023 (Target Reference)"
             }
         else:
             return {
+                "validation_status": "illustrative_validation_target (unverified benchmark comparison)",
                 "official_agency": "Municipal Infrastructure Land Survey Audit",
                 "official_metric_name": "Built-up Expansion Footprint",
                 "satquery_value": "42.8 sq km",
                 "official_value": "43.1 sq km",
-                "alignment_percentage": "99.3% Alignment",
-                "verification_doc": "GIS Cadastral Survey 2024"
+                "alignment_percentage": "99.3% Illustrative Target Match",
+                "verification_doc": "GIS Cadastral Survey 2024 (Target Reference)"
             }
 
     def _get_base_preset_stats(self, preset_id: str) -> Dict[str, Any]:

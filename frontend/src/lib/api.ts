@@ -1,6 +1,8 @@
 import { QueryResponse, AnalyticsData, PresetLocation, STACScene } from '../types';
 
 const API_BASE = 'http://localhost:8000/api';
+const API_KEY = 'satquery-demo-key-2024';
+const DEFAULT_HEADERS = { 'X-API-Key': API_KEY };
 
 // Fallback preset data for offline demo mode
 export const DEMO_PRESETS: Record<string, PresetLocation> = {
@@ -88,7 +90,7 @@ export const DEMO_PRESETS: Record<string, PresetLocation> = {
 
 export async function fetchPresets(): Promise<Record<string, PresetLocation>> {
   try {
-    const res = await fetch(`${API_BASE}/presets`);
+    const res = await fetch(`${API_BASE}/presets`, { headers: DEFAULT_HEADERS });
     if (!res.ok) throw new Error('API failed');
     const data = await res.json();
     return data.presets;
@@ -100,7 +102,7 @@ export async function fetchPresets(): Promise<Record<string, PresetLocation>> {
 
 export async function fetchScenes(presetId: string): Promise<STACScene[]> {
   try {
-    const res = await fetch(`${API_BASE}/scenes?preset_id=${presetId}`);
+    const res = await fetch(`${API_BASE}/scenes?preset_id=${presetId}`, { headers: DEFAULT_HEADERS });
     if (!res.ok) throw new Error('API failed');
     const data = await res.json();
     return data.scenes;
@@ -231,7 +233,7 @@ export async function executeQuery(prompt: string, presetId: string, lang: strin
   try {
     const res = await fetch(`${API_BASE}/query`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
       body: JSON.stringify({ prompt, preset_id: presetId, lang: lang })
     });
     if (!res.ok) throw new Error('Query API failed');

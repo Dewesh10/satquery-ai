@@ -37,6 +37,28 @@ client_request_log: Dict[str, List[float]] = {}
 query_response_cache: Dict[str, Dict[str, Any]] = {}
 
 @app.middleware("http")
+async def api_key_auth_middleware(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    
+    path = request.url.path
+    if path in ["/", "/docs", "/openapi.json", f"{settings.API_V1_STR}/openapi.json"] or path.startswith("/docs"):
+        return await call_next(request)
+    
+    if path.startswith("/api"):
+        api_key_header = request.headers.get("X-API-Key")
+        api_key_query = request.query_params.get("api_key")
+        
+        if api_key_header != settings.API_KEY and api_key_query != settings.API_KEY:
+            return Response(
+                content='{"error": "Unauthorized", "message": "Invalid or missing API key. Provide X-API-Key header or api_key query param."}',
+                status_code=401,
+                media_type="application/json"
+            )
+            
+    return await call_next(request)
+
+@app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
     client_ip = request.client.host if request.client else "127.0.0.1"
     now = time.time()
