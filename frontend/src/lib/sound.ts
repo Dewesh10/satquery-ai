@@ -86,6 +86,10 @@ class CyberSoundEngine {
       osc.stop(this.ctx.currentTime + 0.25);
     } catch (e) {}
   }
+
+  public playTabSwitch() {
+    this.playClick();
+  }
 }
 
 export const soundEngine = new CyberSoundEngine();

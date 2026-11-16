@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Globe, Radio, Layers, Network, Download, Bell, Cpu, ChevronDown, Zap, Award, Languages, MapPin } from 'lucide-react';
+import { Globe, Radio, Layers, Network, Download, Bell, Cpu, ChevronDown, Zap, Award, Languages, MapPin, Activity, History } from 'lucide-react';
 import { PresetLocation } from '../types';
 import { soundEngine } from '../lib/sound';
 
@@ -14,6 +14,7 @@ interface NavbarProps {
   onOpenExport: () => void;
   onOpenBenchmarking: () => void;
   onOpenRoadmap: () => void;
+  onOpenHistory: () => void;
   selectedLang: string;
   onChangeLang: (lang: string) => void;
   activeTab: string;
@@ -25,6 +26,7 @@ export const WORKBENCH_TABS = [
   { id: 'WORKSPACE', label: '3D MAP WORKSPACE', icon: Globe },
   { id: 'BAND_MATH', label: 'BAND MATH STUDIO', icon: Layers },
   { id: 'DAG_STUDIO', label: 'AGENT DAG STUDIO', icon: Network },
+  { id: 'PIPELINE_OPS', label: 'PIPELINE & OPS', icon: Activity },
   { id: 'WATCHTOWER', label: 'SENTINEL WATCHTOWER', icon: Bell },
   { id: 'GOVT_DIRECTIVE', label: 'ISRO BHUVAN DIRECTIVE', icon: MapPin },
   { id: 'HITL_STUDIO', label: 'HITL RETRAINING', icon: Cpu }
@@ -41,6 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenExport,
   onOpenBenchmarking,
   onOpenRoadmap,
+  onOpenHistory,
   selectedLang,
   onChangeLang,
   activeTab,
@@ -61,23 +64,27 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-display font-extrabold text-sm text-slate-100 tracking-wider">SATQUERY AI</span>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/20 text-cyber-cyan border border-cyan-500/40">v2.1 COG</span>
-              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40">LAND REVENUE ICP</span>
+              <span className="font-display font-black text-lg tracking-wider text-white">
+                SatQuery<span className="text-cyber-cyan">.AI</span>
+              </span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyber-cyan border border-cyan-500/30 uppercase tracking-widest font-semibold">
+                ENTERPRISE
+              </span>
             </div>
-            <div className="text-[10px] text-slate-400 font-mono tracking-tight">Municipal Encroachment & Disaster Monitoring Engine</div>
+            <div className="text-[10px] font-mono text-slate-400 flex items-center gap-2">
+              <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                STAC BOA ONLINE
+              </span>
+              <span>•</span>
+              <span>Z-SCORE CALIBRATED</span>
+            </div>
           </div>
-        </div>
-
-        {/* Prominent "Why This Matters" Time & Cost Savings ROI Banner */}
-        <div className="hidden 2xl:flex items-center gap-2 px-3 py-1 rounded-xl bg-amber-500/10 border border-amber-500/40 text-xs font-mono">
-          <Zap className="w-4 h-4 text-amber-400 animate-pulse" />
-          <span className="text-slate-300">MANUAL: <b className="text-amber-400">~6 HRS</b> | SATQUERY AI: <b className="text-cyber-cyan">0.38s (56,800x FASTER)</b></span>
         </div>
       </div>
 
-      {/* Top 6 Workbench Navigation Tabs */}
-      <div className="hidden xl:flex items-center gap-1 bg-[#0B132B] border border-cyber-border rounded-xl p-1 font-sans">
+      {/* Center Tabs Navigation */}
+      <div className="flex items-center gap-1 bg-[#0B132B]/60 p-1 rounded-xl border border-cyber-border/80">
         {WORKBENCH_TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -85,7 +92,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               key={tab.id}
               onClick={() => {
-                soundEngine.playClick();
+                soundEngine.playTabSwitch();
                 onChangeTab(tab.id);
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
@@ -103,7 +110,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
       {/* Action Controls */}
       <div className="flex items-center gap-2.5 relative z-[10000]">
-        {/* Multi-Language Selector Dropdown (English / Hindi / Assamese) */}
+        {/* History Replay Button */}
+        <button
+          onClick={onOpenHistory}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#0B132B] border border-cyan-500/40 text-cyber-cyan text-xs font-semibold hover:bg-cyan-500/10 transition shadow-cyan-glow"
+          title="Open SQLite Query History & Replay Runs"
+        >
+          <History className="w-3.5 h-3.5" />
+          <span>REPLAY</span>
+        </button>
+
+        {/* Multi-Language Selector Dropdown */}
         <div className="relative">
           <button
             onClick={() => { setIsLangOpen(!isLangOpen); setIsBandsOpen(false); }}

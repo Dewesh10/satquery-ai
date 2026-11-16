@@ -1,8 +1,8 @@
 import { QueryResponse, AnalyticsData, PresetLocation, STACScene } from '../types';
 
-const API_BASE = 'http://localhost:8000/api';
-const API_KEY = 'satquery-demo-key-2024';
-const DEFAULT_HEADERS = { 'X-API-Key': API_KEY };
+export const API_BASE = 'http://localhost:8000/api';
+export const API_KEY = 'satquery-demo-key-2024';
+export const DEFAULT_HEADERS = { 'X-API-Key': API_KEY };
 
 // Fallback preset data for offline demo mode
 export const DEMO_PRESETS: Record<string, PresetLocation> = {

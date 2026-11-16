@@ -8,6 +8,7 @@ import { AnalyticsPanel } from './components/analytics/AnalyticsPanel';
 import { TimeSlider } from './components/timeline/TimeSlider';
 import { ExportModal } from './components/export/ExportModal';
 import { PixelChipMagnifier } from './components/inspector/PixelChipMagnifier';
+import { QueryHistoryModal } from './components/history/QueryHistoryModal';
 
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
@@ -16,6 +17,7 @@ const DAGStudio = React.lazy(() => import('./components/studio/DAGStudio').then(
 const SentinelWatchtower = React.lazy(() => import('./components/studio/SentinelWatchtower').then(m => ({ default: m.SentinelWatchtower })));
 const GovernmentReportStudio = React.lazy(() => import('./components/studio/GovernmentReportStudio').then(m => ({ default: m.GovernmentReportStudio })));
 const HITLStudio = React.lazy(() => import('./components/studio/HITLStudio').then(m => ({ default: m.HITLStudio })));
+const PipelineHealthStudio = React.lazy(() => import('./components/studio/PipelineHealthStudio').then(m => ({ default: m.PipelineHealthStudio })));
 const DataLicensingModal = React.lazy(() => import('./components/licensing/DataLicensingModal').then(m => ({ default: m.DataLicensingModal })));
 const ModelBenchmarkingModal = React.lazy(() => import('./components/benchmarking/ModelBenchmarkingModal').then(m => ({ default: m.ModelBenchmarkingModal })));
 const SystemRoadmapModal = React.lazy(() => import('./components/roadmap/SystemRoadmapModal').then(m => ({ default: m.SystemRoadmapModal })));
@@ -41,6 +43,7 @@ export function App() {
   const [isLicensingOpen, setIsLicensingOpen] = useState<boolean>(false);
   const [isBenchmarkingOpen, setIsBenchmarkingOpen] = useState<boolean>(false);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState<boolean>(false);
+  const [isHistoryOpen, setIsHistoryOpen] = useState<boolean>(false);
   const [inspectedChip, setInspectedChip] = useState<EvidenceCard | null>(null);
   
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -90,26 +93,39 @@ export function App() {
         setFlyToCoords(res.plan.preset.center as [number, number]);
       }
     } catch (err) {
-      console.error("Query execution error:", err);
+      console.error(err);
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const currentPreset = presets[selectedPresetId] || (activePlan && activePlan.preset) || {
-    name: 'Dubai Built-Up Growth',
-    category: 'Urban Growth',
+  const handleReplayRun = (runData: any) => {
+    if (runData.plan) setActivePlan(runData.plan);
+    if (runData.analytics) setAnalytics(runData.analytics);
+    if (runData.evidence) setEvidence(runData.evidence);
+    if (runData.preset_id) {
+      setSelectedPresetId(runData.preset_id);
+      if (presets[runData.preset_id]?.center) {
+        setFlyToCoords(presets[runData.preset_id].center as [number, number]);
+      }
+    }
+    setActiveTab('WORKSPACE');
+  };
+
+  const currentPreset = presets[selectedPresetId] || {
+    name: 'Satellite AOI',
+    category: 'Analysis Preset',
     center: [25.08, 55.20],
     zoom: 12,
     bbox: [55.12, 24.95, 55.35, 25.15],
     dates: ['2018-03-15', '2024-02-20'],
     sensors: ['Sentinel-2A MSI', 'Sentinel-2B MSI'],
-    suggested_prompt: 'Show built-up growth in Dubai between two dates'
+    suggested_prompt: 'Analyze change detection'
   };
 
   return (
-    <div className="flex flex-col w-screen h-screen bg-[#030712] text-slate-100 overflow-hidden font-sans">
-      {/* Top Multi-Tab Header */}
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#030712] font-sans antialiased text-slate-100">
+      {/* Top Main Navigation Bar */}
       <Navbar
         presets={presets}
         selectedPreset={selectedPresetId}
@@ -121,6 +137,7 @@ export function App() {
         onOpenExport={() => setIsExportOpen(true)}
         onOpenBenchmarking={() => setIsBenchmarkingOpen(true)}
         onOpenRoadmap={() => setIsRoadmapOpen(true)}
+        onOpenHistory={() => setIsHistoryOpen(true)}
         selectedLang={selectedLang}
         onChangeLang={handleChangeLang}
         activeTab={activeTab}
@@ -128,12 +145,12 @@ export function App() {
         isProcessing={isProcessing}
       />
 
-      {/* Main Multi-Tab Workbench Container */}
-      <div className="flex flex-1 relative overflow-hidden">
-        <ErrorBoundary fallbackTitle="WORKBENCH STUDIO EXCEPTION">
+      {/* Main Work Area Layout */}
+      <div className="flex flex-1 overflow-hidden relative">
+        <ErrorBoundary>
           {activeTab === 'WORKSPACE' && (
             <>
-              {/* Left: AI Copilot Natural Language Drawer */}
+              {/* Left: Natural Language Copilot Drawer */}
               <CopilotDrawer
                 currentPreset={currentPreset}
                 onExecuteQuery={handleExecuteQuery}
@@ -179,6 +196,7 @@ export function App() {
               {/* Right: Grounded Evidence Drawer */}
               <EvidenceDrawer
                 evidence={evidence}
+                presetId={selectedPresetId}
                 onFlyToEvidence={(coords) => {
                   soundEngine.playMapFly();
                   setFlyToCoords(coords);
@@ -193,12 +211,20 @@ export function App() {
           <React.Suspense fallback={<div className="w-full h-full bg-[#030712] flex items-center justify-center font-mono text-xs text-cyber-cyan">LOADING STUDIO MODULE...</div>}>
             {activeTab === 'BAND_MATH' && <BandMathStudio />}
             {activeTab === 'DAG_STUDIO' && <DAGStudio plan={activePlan} />}
+            {activeTab === 'PIPELINE_OPS' && <PipelineHealthStudio />}
             {activeTab === 'WATCHTOWER' && <SentinelWatchtower />}
             {activeTab === 'GOVT_DIRECTIVE' && <GovernmentReportStudio selectedPreset={selectedPresetId} analytics={analytics} />}
             {activeTab === 'HITL_STUDIO' && <HITLStudio />}
           </React.Suspense>
         </ErrorBoundary>
       </div>
+
+      {/* Query History & Session Replay Modal */}
+      <QueryHistoryModal
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        onSelectRun={handleReplayRun}
+      />
 
       {/* Export Artifacts Modal */}
       {isExportOpen && (

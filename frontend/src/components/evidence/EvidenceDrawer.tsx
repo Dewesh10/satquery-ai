@@ -1,9 +1,13 @@
-import React from 'react';
-import { ShieldCheck, MapPin, ZoomIn, FileText, ChevronRight, ChevronLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShieldCheck, MapPin, ZoomIn, FileText, ChevronRight, ChevronLeft, Sparkles, RefreshCw } from 'lucide-react';
 import { EvidenceData, EvidenceCard } from '../../types';
+import { DEFAULT_HEADERS } from '../../lib/api';
+
+const API_BASE = 'http://localhost:8000/api/v1';
 
 interface EvidenceDrawerProps {
   evidence: EvidenceData | null;
+  presetId?: string;
   onFlyToEvidence: (coords: [number, number]) => void;
   onInspectChip: (card: EvidenceCard) => void;
   collapsed: boolean;
@@ -23,11 +27,36 @@ function renderFormattedAnswer(text: string) {
 
 export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
   evidence,
+  presetId = 'dubai_urban',
   onFlyToEvidence,
   onInspectChip,
   collapsed,
   onToggleCollapse
 }) => {
+  const [aiDigest, setAiDigest] = useState<any | null>(null);
+  const [loadingDigest, setLoadingDigest] = useState(false);
+
+  useEffect(() => {
+    if (presetId) {
+      loadAiDigest(presetId);
+    }
+  }, [presetId]);
+
+  const loadAiDigest = async (targetPreset: string, force = false) => {
+    setLoadingDigest(true);
+    try {
+      const res = await fetch(`${API_BASE}/digest/${targetPreset}${force ? '?force=true' : ''}`, { headers: DEFAULT_HEADERS });
+      if (res.ok) {
+        const data = await res.json();
+        setAiDigest(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoadingDigest(false);
+    }
+  };
+
   if (collapsed) {
     return (
       <div className="w-12 h-full bg-[#0B132B]/90 border-l border-cyber-border flex flex-col items-center py-4 z-20 shrink-0 select-none font-sans">
@@ -47,7 +76,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
 
   if (!evidence) {
     return (
-      <div className="w-80 h-full bg-[#0B132B]/90 border-l border-cyber-border backdrop-blur-xl p-4 flex flex-col items-center justify-center text-center z-20 shrink-0 select-none relative font-sans">
+      <div className="w-84 h-full bg-[#0B132B]/90 border-l border-cyber-border backdrop-blur-xl p-4 flex flex-col items-center justify-center text-center z-20 shrink-0 select-none relative font-sans">
         <button
           onClick={onToggleCollapse}
           className="absolute top-4 left-3 p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
@@ -64,7 +93,7 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
   }
 
   return (
-    <div className="w-80 h-full bg-[#0B132B]/90 border-l border-cyber-border backdrop-blur-xl flex flex-col z-20 shrink-0 overflow-y-auto relative font-sans">
+    <div className="w-84 h-full bg-[#0B132B]/90 border-l border-cyber-border backdrop-blur-xl flex flex-col z-20 shrink-0 overflow-y-auto relative font-sans">
       {/* Collapse Button */}
       <button
         onClick={onToggleCollapse}
@@ -84,7 +113,42 @@ export const EvidenceDrawer: React.FC<EvidenceDrawerProps> = ({
         </div>
       </div>
 
-      {/* Grounded VLM Answer Explanation with clean typography */}
+      {/* Gemini AI Change Digest */}
+      <div className="p-4 border-b border-cyber-border bg-black/40 space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="text-xs font-semibold text-purple-400 flex items-center gap-1.5 uppercase">
+            <Sparkles className="w-3.5 h-3.5" />
+            AUTONOMOUS AI DIGEST:
+          </div>
+          <button
+            onClick={() => loadAiDigest(presetId, true)}
+            disabled={loadingDigest}
+            title="Refresh LLM Digest"
+            className="p-1 rounded hover:bg-white/10 text-slate-400 hover:text-purple-300 transition"
+          >
+            <RefreshCw className={`w-3 h-3 ${loadingDigest ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
+
+        <div className="text-xs font-sans text-slate-200 leading-relaxed bg-[#0e1629] p-3 rounded-xl border border-purple-500/30">
+          {loadingDigest ? (
+            <p className="text-[11px] text-slate-400 italic flex items-center gap-2">
+              <RefreshCw className="w-3 h-3 animate-spin text-purple-400" />
+              Synthesizing multi-band digest...
+            </p>
+          ) : (
+            <>
+              <p className="text-xs text-slate-200">{aiDigest?.digest || 'Change metrics observed within normal variance envelope.'}</p>
+              <div className="mt-2.5 pt-2 border-t border-purple-500/20 flex items-center justify-between text-[10px] font-mono text-purple-300">
+                <span>Model: {aiDigest?.mode || 'GEMINI / RULE-BASED'}</span>
+                <span>{aiDigest?.cached ? 'Cached' : 'Fresh'}</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Grounded VLM Answer Explanation */}
       <div className="p-4 border-b border-cyber-border bg-[#030712]/50 space-y-2">
         <div className="text-xs font-semibold text-cyber-cyan flex items-center gap-1.5 uppercase">
           <FileText className="w-4 h-4" />
