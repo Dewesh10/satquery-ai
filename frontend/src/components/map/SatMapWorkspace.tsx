@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Polygon, GeoJSON, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, GeoJSON, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { PresetLocation, AnalyticsData } from '../../types';
-import { Crosshair, Move, Compass, Shield, Radio } from 'lucide-react';
+import { Crosshair, Move, Compass, Shield, Radio, Check, Trash2 } from 'lucide-react';
 import { soundEngine } from '../../lib/sound';
 
 interface SatMapWorkspaceProps {
@@ -12,13 +12,20 @@ interface SatMapWorkspaceProps {
   flyToCoords: [number, number] | null;
   aoiPolygon: [number, number][] | null;
   onDrawAOI: (poly: [number, number][]) => void;
+  onRunCustomAOI?: (poly: [number, number][]) => void;
 }
 
-const MapController: React.FC<{ center: [number, number]; zoom: number; flyTo: [number, number] | null }> = ({ center, zoom, flyTo }) => {
+const MapController: React.FC<{
+  center: [number, number];
+  zoom: number;
+  flyTo: [number, number] | null;
+  onMouseMoveCoords: (lat: number, lng: number, zoom: number) => void;
+  isDrawing: boolean;
+  onAddPoint: (pt: [number, number]) => void;
+}> = ({ center, zoom, flyTo, onMouseMoveCoords, isDrawing, onAddPoint }) => {
   const map = useMap();
 
   useEffect(() => {
-    // Recalculate container size immediately and on resize
     const timer = setTimeout(() => {
       map.invalidateSize();
     }, 100);
@@ -32,6 +39,18 @@ const MapController: React.FC<{ center: [number, number]; zoom: number; flyTo: [
     return () => clearTimeout(timer);
   }, [center, zoom, flyTo, map]);
 
+  useMapEvents({
+    mousemove(e) {
+      onMouseMoveCoords(e.latlng.lat, e.latlng.lng, map.getZoom());
+    },
+    click(e) {
+      if (isDrawing) {
+        onAddPoint([e.latlng.lat, e.latlng.lng]);
+        soundEngine.playClick();
+      }
+    }
+  });
+
   return null;
 };
 
@@ -41,7 +60,8 @@ export const SatMapWorkspace: React.FC<SatMapWorkspaceProps> = ({
   activeLayer,
   flyToCoords,
   aoiPolygon,
-  onDrawAOI
+  onDrawAOI,
+  onRunCustomAOI
 }) => {
   const [coordsReadout, setCoordsReadout] = useState({ lat: preset.center[0], lng: preset.center[1], zoom: preset.zoom });
   const [isDrawing, setIsDrawing] = useState(false);
@@ -77,8 +97,18 @@ export const SatMapWorkspace: React.FC<SatMapWorkspaceProps> = ({
     filterClass = 'spectral-filter-none';
   }
 
+  const handleFinishDrawing = () => {
+    if (drawPoints.length >= 3) {
+      onDrawAOI(drawPoints);
+      if (onRunCustomAOI) {
+        onRunCustomAOI(drawPoints);
+      }
+    }
+    setIsDrawing(false);
+  };
+
   return (
-    <div className="relative w-full h-full bg-[#030712] overflow-hidden select-none">
+    <div className={`relative w-full h-full bg-[#030712] overflow-hidden select-none ${isDrawing ? 'cursor-crosshair' : ''}`}>
       {/* Animated Radar Sweep Beam Scanner Overlay */}
       <div className="radar-beam opacity-40 pointer-events-none" />
 
@@ -115,11 +145,35 @@ export const SatMapWorkspace: React.FC<SatMapWorkspaceProps> = ({
           className={`p-2.5 rounded-lg font-mono text-xs flex items-center gap-2 transition font-bold ${
             isDrawing ? 'bg-rose-500/20 text-rose-400 border border-rose-500/50 shadow-magenta-glow' : 'text-slate-200 hover:bg-slate-800'
           }`}
-          title="Draw Polygon AOI"
+          title="Click vertices on map to draw custom polygon AOI"
         >
           <Move className="w-4 h-4 text-cyber-cyan" />
-          <span className="hidden sm:inline">{isDrawing ? 'DRAWING AOI...' : 'DRAW AOI'}</span>
+          <span className="hidden sm:inline">{isDrawing ? `CLICK MAP (${drawPoints.length} PTS)` : 'DRAW CUSTOM AOI'}</span>
         </button>
+
+        {isDrawing && drawPoints.length >= 3 && (
+          <button
+            onClick={handleFinishDrawing}
+            className="p-2 rounded-lg bg-emerald-500/20 border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/30 font-mono text-xs flex items-center justify-center gap-1.5 font-bold animate-pulse"
+          >
+            <Check className="w-4 h-4" />
+            <span>SAVE AOI</span>
+          </button>
+        )}
+
+        {(aoiPolygon || drawPoints.length > 0) && (
+          <button
+            onClick={() => {
+              setDrawPoints([]);
+              onDrawAOI([]);
+              setIsDrawing(false);
+            }}
+            className="p-2 rounded text-[10px] font-mono text-rose-400 hover:bg-rose-950/30 flex items-center justify-center gap-1 font-bold"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>CLEAR AOI</span>
+          </button>
+        )}
 
         <button
           onClick={() => {
@@ -134,7 +188,6 @@ export const SatMapWorkspace: React.FC<SatMapWorkspaceProps> = ({
             const flightInterval = setInterval(() => {
               if (idx < waypoints.length) {
                 soundEngine.playMapFly();
-                // MapController flyTo handler will smoothly pan Leaflet canvas
                 window.dispatchEvent(new CustomEvent('satquery_flyto', { detail: waypoints[idx] }));
                 idx++;
               } else {
@@ -148,15 +201,6 @@ export const SatMapWorkspace: React.FC<SatMapWorkspaceProps> = ({
           <Radio className="w-4 h-4 text-cyber-cyan animate-pulse" />
           <span className="hidden sm:inline">3D FLIGHT STORYTELLER</span>
         </button>
-
-        {aoiPolygon && (
-          <button
-            onClick={() => onDrawAOI([])}
-            className="p-2 rounded text-[10px] font-mono text-rose-400 hover:bg-rose-950/30 text-center font-bold"
-          >
-            CLEAR AOI
-          </button>
-        )}
       </div>
 
       {/* Confidence-Weighted Layer Visual Legend HUD (Top Center) */}
@@ -186,7 +230,14 @@ export const SatMapWorkspace: React.FC<SatMapWorkspaceProps> = ({
         style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}
         zoomControl={false}
       >
-        <MapController center={preset.center} zoom={preset.zoom} flyTo={flyToCoords} />
+        <MapController
+          center={preset.center}
+          zoom={preset.zoom}
+          flyTo={flyToCoords}
+          onMouseMoveCoords={(lat, lng, z) => setCoordsReadout({ lat, lng, zoom: z })}
+          isDrawing={isDrawing}
+          onAddPoint={(pt) => setDrawPoints(prev => [...prev, pt])}
+        />
         
         {/* Basemap Tile Layer */}
         <TileLayer
