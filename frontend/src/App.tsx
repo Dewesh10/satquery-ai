@@ -61,10 +61,37 @@ export function App() {
     });
   }, []);
 
+  const [customZonalStats, setCustomZonalStats] = useState<any | null>(null);
+
+  const handleRunCustomAOI = async (poly: [number, number][]) => {
+    try {
+      const res = await fetch('http://localhost:8000/api/v1/raster/zonal-stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': 'satquery-demo-key-2024' },
+        body: JSON.stringify({ coordinates: poly })
+      });
+      if (res.ok) {
+        const stats = await res.json();
+        setCustomZonalStats(stats);
+        if (analytics) {
+          setAnalytics({
+            ...analytics,
+            area_sq_km: stats.area_metrics.area_sq_km,
+            hectares: stats.area_metrics.hectares,
+            geojson: stats.geojson
+          });
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleSelectPreset = (presetId: string) => {
     setSelectedPresetId(presetId);
     setFlyToCoords(null);
     setAoiPolygon(null);
+    setCustomZonalStats(null);
     const p = presets[presetId];
     if (p) {
       handleExecuteQuery(p.suggested_prompt, presetId, selectedLang);
@@ -172,6 +199,7 @@ export function App() {
                     flyToCoords={flyToCoords}
                     aoiPolygon={aoiPolygon}
                     onDrawAOI={setAoiPolygon}
+                    onRunCustomAOI={handleRunCustomAOI}
                   />
                 )}
 

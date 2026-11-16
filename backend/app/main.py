@@ -304,6 +304,22 @@ def export_geotiff_manifest(preset_id: str = "dubai_urban", req: Optional[Export
     analytics = raster_engine.compute_change_analytics(target_preset)
     return export_service.export_geotiff_manifest(analytics)
 
+from app.services.geo_utils import compute_custom_aoi_zonal_stats, get_sentinel2_mgrs_info
+
+class ZonalStatsRequest(BaseModel):
+    coordinates: List[List[float]] # [[lat, lng], [lat, lng], ...]
+
+@app.post("/api/raster/zonal-stats")
+@app.post(f"{settings.API_V1_STR}/raster/zonal-stats")
+def get_zonal_stats(req: ZonalStatsRequest):
+    if len(req.coordinates) < 3:
+        raise HTTPException(status_code=400, detail="Polygon must have at least 3 vertices [lat, lng]")
+    return compute_custom_aoi_zonal_stats(req.coordinates)
+
+@app.get(f"{settings.API_V1_STR}/sentinel/tile-info")
+def get_tile_info(lat: float, lng: float):
+    return get_sentinel2_mgrs_info(lat, lng)
+
 class FormulaEvalRequest(BaseModel):
     formula: str
     preset_id: Optional[str] = "dubai_urban"
