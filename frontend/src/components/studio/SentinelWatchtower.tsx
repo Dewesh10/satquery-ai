@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Radio, ShieldAlert, Clock, CheckCircle2, AlertTriangle, Send, Link, Activity } from 'lucide-react';
+import { Bell, Radio, ShieldAlert, Clock, CheckCircle2, AlertTriangle, Send, Link, Activity, RefreshCw } from 'lucide-react';
+import { DEFAULT_HEADERS } from '../../lib/api';
+
+const API_BASE = 'http://localhost:8000/api/v1';
 
 export const SentinelWatchtower: React.FC = () => {
   const [countdown, setCountdown] = useState(15138); // seconds to next pass
@@ -15,6 +18,8 @@ export const SentinelWatchtower: React.FC = () => {
   ]);
   const [alertLogs, setAlertLogs] = useState<any[]>([]);
   const [isTriggering, setIsTriggering] = useState(false);
+  const [isPollingSTAC, setIsPollingSTAC] = useState(false);
+  const [liveStacStatus, setLiveStacStatus] = useState<any | null>(null);
   const [latestDispatchPayload, setLatestDispatchPayload] = useState<any | null>(null);
 
   useEffect(() => {
@@ -31,12 +36,29 @@ export const SentinelWatchtower: React.FC = () => {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
+  const handlePollLiveSTAC = async () => {
+    setIsPollingSTAC(true);
+    try {
+      const res = await fetch(`${API_BASE}/sentinel/poll-live?watchlist_id=AOI-WATCH-01`, {
+        headers: DEFAULT_HEADERS
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLiveStacStatus(data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsPollingSTAC(false);
+    }
+  };
+
   const handleRegisterWebhook = async () => {
     if (!webhookUrl.trim()) return;
     try {
       const res = await fetch('http://localhost:8000/api/sentinel/webhooks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': 'satquery-demo-key-2024' },
+        headers: { 'Content-Type': 'application/json', ...DEFAULT_HEADERS },
         body: JSON.stringify({ url: webhookUrl, min_severity: 'WARNING' })
       });
       if (res.ok) {
@@ -54,7 +76,7 @@ export const SentinelWatchtower: React.FC = () => {
     try {
       const res = await fetch('http://localhost:8000/api/sentinel/alerts/trigger', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-API-Key': 'satquery-demo-key-2024' },
+        headers: { 'Content-Type': 'application/json', ...DEFAULT_HEADERS },
         body: JSON.stringify({
           watchlist_id: 'AOI-WATCH-02',
           severity: 'CRITICAL',
@@ -85,30 +107,56 @@ export const SentinelWatchtower: React.FC = () => {
             </h2>
           </div>
           <p className="text-xs text-slate-400 mt-1">
-            24/7 continuous autonomous satellite pass monitor with webhook alert notifications.
+            24/7 continuous autonomous satellite pass monitor with live Element84 STAC catalog polling and webhook alerts.
           </p>
         </div>
 
-        {/* Orbit Pass Countdown & Action Buttons */}
-        <div className="flex items-center gap-4">
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handlePollLiveSTAC}
+            disabled={isPollingSTAC}
+            className="px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-mono font-bold text-xs flex items-center gap-2 transition shadow-lg"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isPollingSTAC ? 'animate-spin' : ''}`} />
+            <span>{isPollingSTAC ? 'POLLING...' : 'POLL LIVE STAC CATALOG'}</span>
+          </button>
+
           <button
             onClick={handleTriggerSimulatedAlert}
             disabled={isTriggering}
             className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-mono font-bold text-xs flex items-center gap-2 transition shadow-lg shadow-rose-950/50"
           >
             <Send className="w-4 h-4" />
-            <span>{isTriggering ? 'TRIGGERING...' : 'SIMULATE SATELLITE ALERT'}</span>
+            <span>{isTriggering ? 'DISPATCHING...' : 'DISPATCH TEST ALERT'}</span>
           </button>
 
-          <div className="flex items-center gap-3 p-3 bg-[#0B132B] border border-rose-500/40 rounded-xl shadow-rose-950/40 shadow-xl">
+          <div className="flex items-center gap-3 p-2.5 bg-[#0B132B] border border-rose-500/40 rounded-xl shadow-xl">
             <Clock className="w-5 h-5 text-rose-400 animate-spin" />
             <div>
-              <div className="text-[10px] font-mono text-slate-400">NEXT SENTINEL-2B ORBIT PASS</div>
-              <div className="text-lg font-mono font-bold text-rose-400">{formatTime(countdown)}</div>
+              <div className="text-[10px] font-mono text-slate-400">NEXT ORBIT PASS</div>
+              <div className="text-sm font-mono font-bold text-rose-400">{formatTime(countdown)}</div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Live STAC Catalog Polling Banner */}
+      {liveStacStatus && (
+        <div className="p-4 rounded-xl bg-[#0B132B] border border-cyan-500/40 font-mono text-xs flex items-center justify-between shadow-cyan-glow">
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+            <div>
+              <span className="text-cyber-cyan font-bold">LIVE STAC ACQUISITION SYNCED: </span>
+              <span className="text-white font-bold">{liveStacStatus.latest_scene_id}</span>
+              <span className="text-slate-400 ml-2">({liveStacStatus.acquisition_time})</span>
+            </div>
+          </div>
+          <div className="text-right text-[11px] text-slate-300">
+            Cloud Cover: <strong className="text-emerald-400">{liveStacStatus.cloud_cover_pct}%</strong> • Provider: {liveStacStatus.provider}
+          </div>
+        </div>
+      )}
 
       {/* Webhook Configuration & Live Alert Logs */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -168,7 +216,7 @@ export const SentinelWatchtower: React.FC = () => {
             </div>
           ) : (
             <div className="p-6 rounded-xl bg-[#030712] border border-slate-800 text-center font-mono text-xs text-slate-500">
-              Click 'SIMULATE SATELLITE ALERT' above to trigger an automated orbit pass breach and inspect the JSON webhook payload.
+              Click 'DISPATCH TEST ALERT' above to trigger an automated orbit pass breach and inspect the JSON webhook payload.
             </div>
           )}
         </div>
@@ -200,7 +248,7 @@ export const SentinelWatchtower: React.FC = () => {
                 <span>Jebel Ali Coastal Watch</span>
                 <span className="text-[10px] bg-rose-500/10 border border-rose-500/30 px-2 py-0.5 rounded">CRITICAL BREACH</span>
               </div>
-              <div className="text-[11px] text-slate-300">Target AOI: Dubai Coastal Sector 4 • Schedule: Every 6 Hours</div>
+              <div className="text-[11px] text-slate-300">Target AOI: Dubai Coastal Sector 4 • Schedule: Live STAC Watch</div>
               <div className="text-[11px] text-rose-400 bg-rose-950/40 p-2.5 rounded border border-rose-500/30">
                 ALERT: Unauthorized construction breached +5.0 sq km limit (+18.4 sq km detected).
               </div>
@@ -211,7 +259,7 @@ export const SentinelWatchtower: React.FC = () => {
                 <span>Brahmaputra Flood Plain Watch</span>
                 <span className="text-[10px] bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 rounded">ACTIVE PATROL</span>
               </div>
-              <div className="text-[11px] text-slate-300">Target AOI: Assam Brahmaputra • Schedule: Every 12 Hours (SAR Radar)</div>
+              <div className="text-[11px] text-slate-300">Target AOI: Assam Brahmaputra • Schedule: Live STAC Watch</div>
               <div className="text-[11px] text-emerald-400 flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Last orbit pass clear. Water margin within baseline thresholds.</span>

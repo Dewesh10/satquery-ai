@@ -247,6 +247,11 @@ def get_sentinel_webhooks():
 def register_sentinel_webhook(req: RegisterWebhookRequest):
     return sentinel_monitor.register_webhook(req.url, req.min_severity or "WARNING")
 
+@app.post(f"{settings.API_V1_STR}/sentinel/poll-live")
+@app.get(f"{settings.API_V1_STR}/sentinel/poll-live")
+def poll_sentinel_live_stac(watchlist_id: str = "AOI-WATCH-01"):
+    return sentinel_monitor.poll_live_stac_for_watchlist(watchlist_id)
+
 @app.post("/api/sentinel/alerts/trigger")
 @app.post(f"{settings.API_V1_STR}/sentinel/alerts/trigger")
 def trigger_sentinel_alert(req: TriggerAlertRequest):
