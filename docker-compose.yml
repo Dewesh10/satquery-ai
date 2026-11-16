@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.9"
 
 services:
   backend:
@@ -8,15 +8,30 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - PORT=8000
-    restart: always
+      - SATQUERY_API_KEY=${SATQUERY_API_KEY:-satquery-demo-key-2024}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - DISCORD_WEBHOOK_URL=${DISCORD_WEBHOOK_URL:-}
+      - SATQUERY_WEBHOOK_URLS=${SATQUERY_WEBHOOK_URLS:-}
+    volumes:
+      - satquery_db:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on:
-      - backend
-    restart: always
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  satquery_db:
+    driver: local

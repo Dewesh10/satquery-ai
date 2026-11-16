@@ -1,14 +1,29 @@
-FROM node:20-alpine
+# Stage 1: Build React app
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+RUN npm ci --frozen-lockfile
 
 COPY . .
-
 RUN npm run build
 
-EXPOSE 3000
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
 
-CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "3000"]
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Custom nginx config for SPA routing
+RUN echo 'server { \
+    listen 80; \
+    root /usr/share/nginx/html; \
+    index index.html; \
+    location / { try_files $uri $uri/ /index.html; } \
+    gzip on; \
+    gzip_types text/plain text/css application/javascript application/json; \
+}' > /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost/ || exit 1

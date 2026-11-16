@@ -41,4 +41,6 @@ yarn-error.log*
 *.sln
 *.swp
 *.tif
+*.db
+satquery_history.db
 

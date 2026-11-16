@@ -11,7 +11,11 @@ from app.services.catalog import catalog_service
 from app.services.raster import raster_engine
 from app.services.vision import vision_service
 from app.services.vlm_evidence import vlm_engine
-from app.services.replay import replay_store
+from app.services.query_store import query_store
+from app.services.anomaly_detector import anom_detector
+from app.services.alert_dispatcher import alert_dispatcher
+from app.services.health_monitor import health_monitor
+from app.services.digest_generator import digest_generator
 from app.services.export import export_service
 from app.services.sentinel_monitor import sentinel_monitor
 from app.services.hitl import hitl_service
@@ -152,9 +156,24 @@ def execute_query(req: QueryRequest, response: Response):
     analytics = raster_engine.compute_change_analytics(preset_id)
     vision_results = vision_service.run_bitemporal_change_detection(preset_id)
     evidence = vlm_engine.synthesize_answer(req.prompt, preset_id, analytics, lang=req.lang or "EN")
-    
+
+    # Feed metrics into anomaly detector
+    metrics_to_check = {}
+    if analytics.get("area_sq_km"):
+        metrics_to_check["area_delta"] = float(analytics.get("area_sq_km", 0))
+    if analytics.get("confidence_score"):
+        metrics_to_check["confidence"] = float(analytics.get("confidence_score", 0))
+    triggered_alerts = anom_detector.observe(preset_id, metrics_to_check)
+    # Dispatch webhooks for triggered alerts
+    for alert in triggered_alerts:
+        query_store.save_alert(
+            alert["alert_id"], preset_id, alert["alert_type"], alert["severity"],
+            alert.get("observed_value", 0), alert.get("threshold_used", 0), alert["message"]
+        )
+        alert_dispatcher.dispatch(alert)
+
     run_id = f"RUN-{uuid.uuid4().hex[:8].upper()}"
-    run_record = replay_store.save_run(run_id, plan, analytics, evidence)
+    run_record = query_store.save_run(run_id, plan, analytics, evidence)
     
     result = {
         "run_id": run_id,
@@ -167,6 +186,47 @@ def execute_query(req: QueryRequest, response: Response):
     query_response_cache[cache_key] = result
     response.headers["X-Cache-Status"] = "MISS-COMPUTED"
     return result
+
+@app.get(f"{settings.API_V1_STR}/history")
+def get_query_history(limit: int = 20):
+    return {"runs": query_store.get_history(limit=limit)}
+
+@app.get(f"{settings.API_V1_STR}/replay/{{run_id}}")
+def get_replay(run_id: str):
+    run = query_store.get_run(run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail=f"Run {run_id} not found")
+    return run
+
+@app.get(f"{settings.API_V1_STR}/demo")
+def get_demo_snapshot():
+    return {"runs": query_store.get_demo_snapshot(), "demo_mode": True}
+
+@app.get(f"{settings.API_V1_STR}/alerts")
+def get_alerts(limit: int = 50):
+    return {"alerts": query_store.get_alert_history(limit=limit), "stats": anom_detector.get_stats()}
+
+@app.get(f"{settings.API_V1_STR}/health/pipeline")
+def get_pipeline_health():
+    return health_monitor.get_full_report(
+        query_store=query_store,
+        anom_detector=anom_detector,
+        alert_dispatcher=alert_dispatcher
+    )
+
+@app.get(f"{settings.API_V1_STR}/digest/{{preset_id}}")
+def get_ai_digest(preset_id: str, force: bool = False):
+    analytics = raster_engine.compute_change_analytics(preset_id)
+    return digest_generator.generate(preset_id, analytics, force_refresh=force)
+
+@app.get(f"{settings.API_V1_STR}/webhooks")
+def get_webhook_stats():
+    return alert_dispatcher.get_stats()
+
+@app.post(f"{settings.API_V1_STR}/webhooks/register")
+def register_webhook(url: str):
+    alert_dispatcher.register(url)
+    return {"status": "registered", "url": url}
 
 # Autonomous Sentinel Monitoring Endpoints
 @app.get(f"{settings.API_V1_STR}/sentinel/watchlists")
