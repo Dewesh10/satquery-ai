@@ -19,6 +19,7 @@ export const SentinelWatchtower: React.FC = () => {
   const [alertLogs, setAlertLogs] = useState<any[]>([]);
   const [isTriggering, setIsTriggering] = useState(false);
   const [isPollingSTAC, setIsPollingSTAC] = useState(false);
+  const [isRunningClosedLoop, setIsRunningClosedLoop] = useState(false);
   const [liveStacStatus, setLiveStacStatus] = useState<any | null>(null);
   const [latestDispatchPayload, setLatestDispatchPayload] = useState<any | null>(null);
 
@@ -50,6 +51,32 @@ export const SentinelWatchtower: React.FC = () => {
       console.error(e);
     } finally {
       setIsPollingSTAC(false);
+    }
+  };
+
+  const handleRunClosedLoopPass = async () => {
+    setIsRunningClosedLoop(true);
+    try {
+      const res = await fetch(`${API_BASE}/sentinel/process-pass`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...DEFAULT_HEADERS },
+        body: JSON.stringify({
+          watchlist_id: 'AOI-WATCH-01',
+          force_breach: true,
+          simulated_delta_sq_km: 114.6
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLatestDispatchPayload(data);
+        if (data.alert_dispatched && data.dispatched_alert) {
+          setAlertLogs(prev => [data.dispatched_alert, ...prev]);
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsRunningClosedLoop(false);
     }
   };
 
@@ -113,6 +140,15 @@ export const SentinelWatchtower: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={handleRunClosedLoopPass}
+            disabled={isRunningClosedLoop}
+            className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-mono font-bold text-xs flex items-center gap-2 transition shadow-lg shadow-emerald-950/50 border border-emerald-400/40"
+          >
+            <Activity className={`w-4 h-4 ${isRunningClosedLoop ? 'animate-spin' : ''}`} />
+            <span>{isRunningClosedLoop ? 'EVALUATING PASS...' : 'RUN CLOSED-LOOP PASS PIPELINE'}</span>
+          </button>
+
           <button
             onClick={handlePollLiveSTAC}
             disabled={isPollingSTAC}
