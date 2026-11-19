@@ -19,6 +19,8 @@ from app.services.digest_generator import digest_generator
 from app.services.export import export_service
 from app.services.sentinel_monitor import sentinel_monitor
 from app.services.hitl import hitl_service
+from app.services.timeseries import timeseries_engine
+from app.services.reproducibility import generate_reproducibility_manifest
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -287,6 +289,20 @@ def get_hitl_logs():
 @app.get(f"{settings.API_V1_STR}/hitl/tuning")
 def get_hitl_tuning():
     return hitl_service.get_active_threshold_tuning_recommendation()
+
+@app.get(f"{settings.API_V1_STR}/timeseries/{{preset_id}}")
+def get_timeseries_analysis(preset_id: str = "dubai_urban"):
+    return timeseries_engine.compute_timeseries(preset_id)
+
+@app.get(f"{settings.API_V1_STR}/reproducibility-report/{{preset_id}}")
+def get_reproducibility_report(preset_id: str = "dubai_urban"):
+    analytics = raster_engine.compute_change_analytics(preset_id)
+    return analytics.get("reproducibility_manifest") or generate_reproducibility_manifest(
+        query_text=f"Bitemporal change detection for {preset_id}",
+        preset_id=preset_id,
+        bbox=analytics.get("geojson", {}).get("bbox", [-74.0, 40.7, -73.9, 40.8]),
+        primary_metric=analytics.get("primary_metric_value", "")
+    )
 
 # Government Notice & ISRO Bhuvan Export Endpoints (Supports both GET window.open and POST API calls)
 @app.get("/api/export/government-notice")
