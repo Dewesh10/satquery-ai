@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <b>Enterprise-grade geospatial copilot compiling natural language queries into distributed DAG workflows over live Sentinel-2 / Landsat-9 COG byte-range data. Features real-time Z-score anomaly alerting, SQLite query replay, and automated multi-sensor AI synthesis.</b>
+  <b>Geospatial intelligence copilot that compiles natural language queries into DAG-based satellite analysis pipelines over live Sentinel-2 / Landsat-9 COG byte-range data. Features SCL cloud masking, multi-date time series, Z-score anomaly alerting, closed-loop Watchtower, HITL threshold tuning, and SHA-256 reproducibility manifests.</b>
 </p>
 
 ---
