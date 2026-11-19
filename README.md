@@ -70,22 +70,29 @@ flowchart TD
 
 ---
 
-## 🎯 Empirical Benchmark Accuracy & ML Validation
+## 🧪 Synthetic Pipeline Validation (Algorithm Correctness — Not Benchmark Scores)
 
-To replace uncalibrated heuristics with rigorous ground truth verification, SatQuery AI is evaluated against gold-standard public geospatial benchmarks using **out-of-distribution unseen test splits**:
+> [!IMPORTANT]
+> The scores below are computed on **synthetic numpy arrays** generated from calibrated SAR/optical physics distributions. They are **not** scores on real Sen1Floods11 or OSCD image chips and should not be read as benchmark results on those datasets. They validate that the algorithms behave correctly given realistic signal distributions.
+>
+> **To obtain real benchmark scores**, see the "Real Evaluation Path" section below.
 
-| Benchmark Dataset | Ground Truth Domain | Primary Modalities | IoU (Jaccard) | Precision | Recall | F1-Score | Evaluation Protocol |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Sen1Floods11 (Multi-Sensor RF)** | Assam Brahmaputra Flood Plain | Sentinel-1 SAR (VV/VH) + Sentinel-2 | **0.8855** | **95.99%** | **91.96%** | **0.9393** | Unseen Test Split (Trained on Bolivar, Evaluated on Assam) |
-| **Sen1Floods11 (SAR Specular Base)** | Assam Flood Plain (SAR Only) | Sentinel-1 C-Band SAR (-16.5 dB) | **0.6017** | 63.11% | 92.83% | 0.7514 | Specular Thresholding with Radar Speckle & Shadow Noise |
-| **Classical NDWI Baseline** | Assam Flood Plain (Optical Only) | Sentinel-2 Optical (B03, B08) | **0.4832** | 64.93% | 65.38% | 0.6516 | Optical Threshold (NDWI > 0.15) under 85% Monsoon Clouds |
-| **OSCD** (Onera Satellite Change) | Dubai Urban / Infrastructure Corridor | Sentinel-2 Multi-Temporal Pairs | **0.2968** | **32.43%** | **77.78%** | **0.4577** | Bitemporal NDBI Delta with Sparse ~3.2% Class Imbalance |
+| Algorithm Validated | Signal Distribution | IoU (Jaccard) | Precision | Recall | F1-Score | Notes |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Multi-Sensor Random Forest** (SAR VV/VH + NDWI) | Synthetic: Bolivar-like train → Assam monsoon-cloud test | **0.8855** | 95.99% | 91.96% | 0.9393 | Different noise levels across sets; not real chips |
+| **SAR Specular Thresholding** (VV < −16.5 dB) | Synthetic: N(−20.2, 2.6) water vs N(−12.1, 3.4) land | **0.6017** | 63.11% | 92.83% | 0.7514 | Radar shadow artefacts included |
+| **Classical Optical NDWI** (> 0.15) | Synthetic: heavy monsoonal cloud noise on NDWI | **0.4832** | 64.93% | 65.38% | 0.6516 | Demonstrates cloud-blindness degradation |
+| **NDBI Delta Change Detection** | Synthetic: 3.2% change class, coregistration edge artefacts | **0.2968** | 32.43% | 77.78% | 0.4577 | F1 consistent with literature range 0.42–0.60 for simple differencing |
 
-### 🔬 Multi-Sensor ML Component vs Classical Thresholding
-- **Cloud-Blindness in Monsoons**: During monsoon flood events in Assam, optical Sentinel-2 imagery suffers 70–95% cloud obscuration and dark shadow artifacts, causing high false-positive rates with raw NDWI.
-- **SAR Specular Scattering**: Sentinel-1 C-band synthetic aperture radar (SAR) operates at 5.405 GHz, penetrating monsoonal clouds. Water surfaces produce specular forward scattering, driving backscatter down to $\approx -20.5\text{ dB}$ compared to rough terrain at $\approx -12.0\text{ dB}$.
-- **Random Forest Fusion Gain**: Fusing Sentinel-1 VV, VH, and VV/VH ratio with optical NDWI achieves an **IoU gain of +40.23 points** (0.8855 vs 0.4832), representing an **+83.3% relative gain** over optical alone on cloudy monsoon test scenes.
-- **Scientific Realism on OSCD**: Published deep learning and differencing baselines in remote sensing literature (Daudt et al.) score F1 between $0.42$ and $0.60$ on OSCD due to extreme class imbalance (~3.2% true change) and seasonal phenology shifts. Our morphological connected-component filter achieves an honest **0.4577 F1**, eliminating ungrounded artificial inflations.
+### 🔬 What These Scores Do and Don't Show
+- **What they show**: The Random Forest fuser behaves correctly when given realistic SAR + optical features. Cloud-degraded optical NDWI is visibly inferior to SAR-fused predictions when test noise matches heavy monsoon conditions.
+- **What they don't show**: Whether the same advantage holds on real Sentinel-1 GRD product pixels with real radiometric calibration, real speckle filtering (Lee/Gamma-MAP), and real geographic label masks.
+- **SAR physics**: Sentinel-1 C-band (5.405 GHz) penetrates monsoonal cloud cover. Water specular forward scattering drives VV backscatter to $\approx -20.5\text{ dB}$ vs land at $\approx -12.0\text{ dB}$ — the classifier exploits this separation.
+
+### 📥 Real Evaluation Path
+To replace synthetic validation with real benchmark scores:
+1. **Sen1Floods11** — `gs://sen1floods11_dataset/` (Google Cloud Storage, free public access). Download chip pairs and label masks; use `train_split.csv`/`test_split.csv` for the geographic split. Paper: Bonafilia et al., CVPRW 2020.
+2. **OSCD** — `https://ieee-dataport.org/open-access/oscd-onera-satellite-change-detection` (IEEE DataPort, free registration). Download Sentinel-2 image pair folders and change label PNGs. Paper: Daudt et al., IGARSS 2018.
 
 ---
 
@@ -100,7 +107,7 @@ To replace uncalibrated heuristics with rigorous ground truth verification, SatQ
   - `cloud_free_fraction`: Valid, unmasked surface ratio ($0.0 - 1.0$).
   - `distance_from_threshold_sigma`: Statistical firmness of classification in standard deviation units ($\Delta - \theta / \sigma$).
   - `valid_pixel_count`: Explicit count of physical 10m pixels corroborating the claim.
-  - `uncertainty_statement`: Human-readable executive integrity summary (e.g., *"98.8% cloud-free pixels, change threshold exceeded by 2.41σ, backed by 9,880 valid 10m pixels."*).
+  - `uncertainty_statement`: Human-readable executive integrity summary.
 
 ### 3. Bit-for-Bit Reproducibility Manifest Engine
 - Generates a tamper-evident, SHA-256 hashed reproducibility manifest (`GET /api/v1/reproducibility-report/{preset_id}`) recording exact STAC scene IDs, direct S3 COG asset URLs, band math expressions, spatial bounding boxes, decision cutoffs, and software git commit hashes.
@@ -139,9 +146,9 @@ In accordance with strict production-grade documentation standards, every compon
 | **Pixel Data Source** | `LIVE_AWS_COG_CACHE` | Real S3 Byte Fetching | Authentic reflectances ($\mu_{\text{NDVI}}=0.74125$) |
 | **SCL Cloud Masking** | `SENTINEL_2_SCL_FILTER` | Verified (Classes 3,8,9,10) | Automated atmospheric quality assurance |
 | **Multi-Date Time Series** | `TEMPORAL_TREND_ENGINE` | Verified (Polyfit slope & Z) | Distinguishes seasonal swings from structural trends |
-| **Computer Vision Engine** | `SCIPY_CONNECTED_COMPONENTS` | Verified on OSCD | Morphological labeling, speckle filtering, centroids |
+| **Computer Vision Engine** | `SCIPY_CONNECTED_COMPONENTS` | Verified (Synthetic) | Morphological labeling, speckle filtering, centroids |
 | **Anomaly Detection** | `Z_SCORE_ROLLING_W10` | 3 Sigma Verification | In-memory window + SQLite alert log |
-| **Multi-Sensor ML Model** | `RANDOM_FOREST_FUSION` | Sen1Floods11 Benchmarked | Trained on SAR (VV/VH) + Optical NDWI (IoU: 0.8855) |
+| **Multi-Sensor ML Model** | `RANDOM_FOREST_FUSION` | Synthetic Validation | Random Forest on SAR (VV/VH) + Optical NDWI; synthetic IoU 0.83 vs NDWI 0.48 |
 | **Reproducibility Manifest** | `SHA256_PROVENANCE_LOG` | Verified (Bit-for-Bit) | Exact STAC scene IDs, params, commit hash |
 | **LLM Query Planner** | `SCHEMA_VALIDATED_LLM` | JSON Schema Verified | Gemini 2.5 Flash with regex/preset fallback |
 | **Closed-Loop Watchtower** | `STAC_ALERT_PIPELINE` | End-to-End Verified | Live pass polling -> Anomaly eval -> Webhook dispatch |
@@ -173,7 +180,7 @@ satquery-ai/
 │   │   │   ├── catalog.py            # STAC API search client
 │   │   │   ├── cloud_mask.py         # Sentinel-2 SCL band cloud & shadow masking
 │   │   │   ├── digest_generator.py   # Gemini 2.5 Flash LLM & rule-based digest
-│   │   │   ├── eval_benchmarks.py    # Sen1Floods11 & OSCD out-of-distribution benchmark suite
+│   │   │   ├── eval_benchmarks.py    # Synthetic pipeline validation suite (SAR & urban change algorithm correctness)
 │   │   │   ├── export.py             # GeoJSON, CSV, PDF, GeoTIFF exporter
 │   │   │   ├── geo_utils.py          # Geodesic Shoelace & MGRS tile calculator
 │   │   │   ├── health_monitor.py     # Subsystem SLA & telemetry collector
@@ -294,7 +301,7 @@ All API endpoints require authentication via `X-API-Key: satquery-demo-key-2024`
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `POST` | `/api/v1/query` | Natural language query compilation & bitemporal change analysis |
-| `GET` | `/api/v1/benchmarks` | Sen1Floods11 & OSCD ground truth benchmark accuracy and ML metrics |
+| `GET` | `/api/v1/benchmarks` | Synthetic pipeline validation metrics (SAR & urban change algorithm correctness) |
 | `POST` | `/api/v1/sentinel/process-pass` | Closed-loop Sentinel pass ingest → Anomaly evaluation → Webhook alert |
 | `GET` | `/api/v1/hitl/tuning` | Computes active false-positive / false-negative threshold adjustments |
 | `POST` | `/api/v1/hitl/feedback` | Ingests human operator verification tags to guide retraining |
