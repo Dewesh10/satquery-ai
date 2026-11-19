@@ -257,6 +257,24 @@ def poll_sentinel_live_stac(watchlist_id: str = "AOI-WATCH-01"):
 def trigger_sentinel_alert(req: TriggerAlertRequest):
     return sentinel_monitor.trigger_simulated_alert(req.watchlist_id, req.severity or "CRITICAL", req.custom_message)
 
+from app.services.eval_benchmarks import get_all_benchmark_scores
+from app.services.ml_flood_classifier import ml_flood_engine
+
+@app.get(f"{settings.API_V1_STR}/benchmarks")
+def get_benchmarks_report():
+    return {
+        "benchmarks": get_all_benchmark_scores(),
+        "ml_model_evaluation": ml_flood_engine.get_evaluation()
+    }
+
+@app.post(f"{settings.API_V1_STR}/sentinel/process-pass")
+def process_sentinel_pass(watchlist_id: str = "AOI-WATCH-01"):
+    return sentinel_monitor.process_live_pass_and_evaluate_alert(
+        watchlist_id=watchlist_id,
+        alert_dispatcher=alert_dispatcher,
+        query_store=query_store
+    )
+
 # Human-In-The-Loop Feedback Endpoints
 @app.post(f"{settings.API_V1_STR}/hitl/feedback")
 def submit_hitl_feedback(req: HITLFeedbackRequest):
@@ -265,6 +283,10 @@ def submit_hitl_feedback(req: HITLFeedbackRequest):
 @app.get(f"{settings.API_V1_STR}/hitl/logs")
 def get_hitl_logs():
     return {"logs": hitl_service.get_feedback_logs()}
+
+@app.get(f"{settings.API_V1_STR}/hitl/tuning")
+def get_hitl_tuning():
+    return hitl_service.get_active_threshold_tuning_recommendation()
 
 # Government Notice & ISRO Bhuvan Export Endpoints (Supports both GET window.open and POST API calls)
 @app.get("/api/export/government-notice")

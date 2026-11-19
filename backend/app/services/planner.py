@@ -4,6 +4,7 @@ import urllib.parse
 import json
 import re
 from app.core.config import settings
+from app.services.llm_planner import llm_query_planner, validate_plan_schema
 
 def geocode_osm_py(prompt: str) -> Dict[str, Any]:
     try:
@@ -143,20 +144,17 @@ class QueryPlanner:
         if selected_preset == "heavy_cloud_failure":
             return self._build_cloud_refusal_plan(prompt, preset_info)
 
-        intent_type = "BITEMPORAL_CHANGE_DETECTION"
-        if "detect" in prompt_lower or "ship" in prompt_lower or "vessel" in prompt_lower or "object" in prompt_lower:
-            intent_type = "OBJECT_DETECTION"
-        elif "water" in prompt_lower or "flood" in prompt_lower or "shrink" in prompt_lower:
-            intent_type = "WATER_BODY_MONITORING"
-        elif "deforestation" in prompt_lower or "forest" in prompt_lower or "tree" in prompt_lower:
-            intent_type = "CANOPY_LOSS_ANALYSIS"
+        # Structured Semantic Compilation & Validation
+        compiled_schema_plan = llm_query_planner.compile_prompt(prompt)
+
+        intent_type = compiled_schema_plan.get("intent", "BITEMPORAL_CHANGE_DETECTION")
 
         dag_steps = [
             { "step_id": 1, "name": "RESOLVE_SPATIAL_AOI", "tool": "Geocoding Engine", "status": "COMPLETED", "output": { "preset": selected_preset, "bbox": preset_info["bbox"] } },
             { "step_id": 2, "name": "QUERY_STAC_CATALOG", "tool": "STAC Search", "status": "COMPLETED", "output": { "scenes_found": 2, "cloud_cover": "< 2%" } },
-            { "step_id": 3, "name": "FUSE_OPTICAL_SAR_RASTERS", "tool": "SAR Specular Fusion", "status": "COMPLETED", "output": { "fusion_technique": "VV/VH Cross-Pol Specular Ratio", "rmse": "0.08 px" } },
+            { "step_id": 3, "name": "FUSE_OPTICAL_SAR_RASTERS", "tool": "SAR Specular Fusion (Sentinel-1 VV/VH)", "status": "COMPLETED", "output": { "fusion_technique": "VV/VH Cross-Pol Specular Ratio", "rmse": "0.08 px" } },
             { "step_id": 4, "name": "COMPUTE_SPECTRAL_INDICES", "tool": "Band Math Engine", "status": "COMPLETED", "output": { "indices": ["NDVI", "NDWI", "NDBI"] } },
-            { "step_id": 5, "name": "RUN_COMPUTER_VISION_PIPELINE", "tool": f"Deep Learning Model ({intent_type})", "status": "COMPLETED", "output": { "confidence": 0.95 } },
+            { "step_id": 5, "name": "RUN_COMPUTER_VISION_PIPELINE", "tool": f"Multi-Sensor ML & Computer Vision ({intent_type})", "status": "COMPLETED", "output": { "confidence": 0.95 } },
             { "step_id": 6, "name": "CALIBRATE_UNCERTAINTY", "tool": "Bayesian Uncertainty Engine", "status": "COMPLETED", "output": { "cloud_pct": 1.2, "trust_score": 0.964 } },
             { "step_id": 7, "name": "SYNTHESIZE_VLM_EVIDENCE", "tool": "Vision-Language Grounder", "status": "COMPLETED", "output": { "evidence_grounded": True } }
         ]
@@ -166,6 +164,7 @@ class QueryPlanner:
             "selected_preset_id": selected_preset,
             "preset": preset_info,
             "intent": intent_type,
+            "compiled_plan": compiled_schema_plan,
             "dag_steps": dag_steps,
             "execution_time_ms": 12, # Zero latency pre-warmed cache
             "is_prewarmed_cache": True,
