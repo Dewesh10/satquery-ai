@@ -1,5 +1,7 @@
+import os
 import time
 import uuid
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Response, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -21,19 +23,37 @@ from app.services.sentinel_monitor import sentinel_monitor
 from app.services.hitl import hitl_service
 from app.services.timeseries import timeseries_engine
 from app.services.reproducibility import generate_reproducibility_manifest
+from app.services.safe_formula_eval import safe_eval_formula
+from app.services.webhook_validator import validate_webhook_url
+from app.services.demo_seed import seed_demo_data
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Seed demo data on startup (idempotent — skips if rows already exist)
+    try:
+        seed_demo_data()
+    except Exception as exc:
+        print(f"[startup] Demo seed skipped: {exc}")
+    yield
+
+# Restrict CORS to known frontend origins in production;
+# fall back to "*" only when CORS_ORIGINS env var is unset (local dev).
+_cors_origins_env = os.getenv("CORS_ORIGINS", "")
+_cors_origins = [o.strip() for o in _cors_origins_env.split(",") if o.strip()] or ["*"]
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "X-API-Key", "Authorization"],
 )
 
 # API Rate-Limiting & Abuse Throttling Engine for SIH Judge Queries
@@ -227,8 +247,12 @@ def get_webhook_stats():
 
 @app.post(f"{settings.API_V1_STR}/webhooks/register")
 def register_webhook(url: str):
-    alert_dispatcher.register(url)
-    return {"status": "registered", "url": url}
+    try:
+        safe_url = validate_webhook_url(url)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    alert_dispatcher.register(safe_url)
+    return {"status": "registered", "url": safe_url}
 
 # Autonomous Sentinel Monitoring Endpoints
 @app.get(f"{settings.API_V1_STR}/sentinel/watchlists")
@@ -247,7 +271,11 @@ def get_sentinel_webhooks():
 @app.post("/api/sentinel/webhooks")
 @app.post(f"{settings.API_V1_STR}/sentinel/webhooks")
 def register_sentinel_webhook(req: RegisterWebhookRequest):
-    return sentinel_monitor.register_webhook(req.url, req.min_severity or "WARNING")
+    try:
+        safe_url = validate_webhook_url(req.url)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return sentinel_monitor.register_webhook(safe_url, req.min_severity or "WARNING")
 
 @app.post(f"{settings.API_V1_STR}/sentinel/poll-live")
 @app.get(f"{settings.API_V1_STR}/sentinel/poll-live")
@@ -366,53 +394,43 @@ class FormulaEvalRequest(BaseModel):
 @app.post(f"{settings.API_V1_STR}/raster/eval-formula")
 def evaluate_spectral_formula(req: FormulaEvalRequest):
     import numpy as np
-    import re
     formula = req.formula.strip()
-    
-    # Safe validation of tokens: only allow band variables B02, B03, B04, B08, B11, B12 and basic math
-    clean_formula = re.sub(r'[^B0-9\+\-\*\/\(\)\.\s]', '', formula)
-    if not clean_formula:
-        raise HTTPException(status_code=400, detail="Invalid mathematical formula")
-    
-    # Generate representative calibrated band grids (100x100)
+
+    # Generate representative calibrated band grids (50x50 synthetic pixels)
     grid_size = 50
+    rng = np.random.default_rng(seed=42)  # fixed seed → reproducible results
     bands = {
-        'B02': np.random.uniform(0.04, 0.12, (grid_size, grid_size)), # Blue
-        'B03': np.random.uniform(0.06, 0.18, (grid_size, grid_size)), # Green
-        'B04': np.random.uniform(0.05, 0.22, (grid_size, grid_size)), # Red
-        'B08': np.random.uniform(0.25, 0.65, (grid_size, grid_size)), # NIR
-        'B11': np.random.uniform(0.12, 0.35, (grid_size, grid_size)), # SWIR-1
-        'B12': np.random.uniform(0.08, 0.28, (grid_size, grid_size))  # SWIR-2
+        'B02': rng.uniform(0.04, 0.12, (grid_size, grid_size)),  # Blue
+        'B03': rng.uniform(0.06, 0.18, (grid_size, grid_size)),  # Green
+        'B04': rng.uniform(0.05, 0.22, (grid_size, grid_size)),  # Red
+        'B08': rng.uniform(0.25, 0.65, (grid_size, grid_size)),  # NIR
+        'B11': rng.uniform(0.12, 0.35, (grid_size, grid_size)),  # SWIR-1
+        'B12': rng.uniform(0.08, 0.28, (grid_size, grid_size)),  # SWIR-2
     }
-    
-    # Replace variable tokens with dict references for safe eval
-    eval_expr = clean_formula
-    for b in ['B02', 'B03', 'B04', 'B08', 'B11', 'B12']:
-        eval_expr = re.sub(r'\b' + b + r'\b', f"bands['{b}']", eval_expr)
-    
+
+    # Safe AST-based evaluation — no eval() or exec() involved
     try:
-        result_array = eval(eval_expr, {"__builtins__": {}, "np": np, "bands": bands})
-        # Add epsilon to prevent div-by-zero nan/inf
-        result_array = np.nan_to_num(result_array, nan=0.0, posinf=1.0, neginf=-1.0)
-        
-        # Calculate histogram buckets
-        hist, bin_edges = np.histogram(result_array, bins=10)
-        histogram_data = [
-            {"bin": f"{round(float(bin_edges[i]), 2)} to {round(float(bin_edges[i+1]), 2)}", "count": int(hist[i])}
-            for i in range(len(hist))
-        ]
-        
-        return {
-            "formula": formula,
-            "mean_index_value": round(float(np.mean(result_array)), 4),
-            "min_index_value": round(float(np.min(result_array)), 4),
-            "max_index_value": round(float(np.max(result_array)), 4),
-            "std_deviation": round(float(np.std(result_array)), 4),
-            "histogram": histogram_data,
-            "status": "EVALUATED_NUMPY_VECTORIZED"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Formula evaluation error: {str(e)}")
+        result_array = safe_eval_formula(formula, bands)
+    except (ValueError, SyntaxError) as exc:
+        raise HTTPException(status_code=400, detail=f"Formula error: {exc}")
+
+    # Calculate histogram buckets
+    hist, bin_edges = np.histogram(result_array, bins=10)
+    histogram_data = [
+        {"bin": f"{round(float(bin_edges[i]), 2)} to {round(float(bin_edges[i+1]), 2)}", "count": int(hist[i])}
+        for i in range(len(hist))
+    ]
+
+    return {
+        "formula": formula,
+        "mean_index_value": round(float(np.mean(result_array)), 4),
+        "min_index_value":  round(float(np.min(result_array)), 4),
+        "max_index_value":  round(float(np.max(result_array)), 4),
+        "std_deviation":    round(float(np.std(result_array)), 4),
+        "histogram": histogram_data,
+        "status": "EVALUATED_SAFE_AST_PARSER",
+        "note": "Expression evaluated with whitelisted AST parser — no eval() or exec() used."
+    }
 
 @app.get("/api/export/csv")
 @app.get(f"{settings.API_V1_STR}/export/csv")

@@ -54,6 +54,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [isLangOpen, setIsLangOpen] = useState(false);
 
   return (
+    <>
+      {/* Demo disclaimer banner — always visible at the very top */}
+      <div className="w-full bg-amber-500/10 border-b border-amber-500/30 px-4 py-1 flex items-center justify-center gap-2 text-[11px] font-mono text-amber-300 select-none z-[10000]">
+        <span className="font-bold text-amber-400">⚠ DEMO</span>
+        <span>·</span>
+        <span>Synthetic pipeline validation only — not for operational or safety-critical use.</span>
+        <span>·</span>
+        <span>Benchmarks are computed on simulated arrays, not real Sen1Floods11 / OSCD chips.</span>
+      </div>
     <header className="h-16 bg-[#030712]/95 border-b border-cyber-border backdrop-blur-xl px-5 flex items-center justify-between z-[9999] relative shrink-0 select-none font-sans">
       {/* Brand & ROI Efficiency Banner */}
       <div className="flex items-center gap-4">
@@ -228,5 +237,6 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
       </div>
     </header>
+    </>
   );
 };

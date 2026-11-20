@@ -201,3 +201,139 @@ def test_reproducibility_manifest():
     assert len(manifest["stac_input_scenes"]) == 2
     assert manifest["software_environment"]["name"] == "SatQuery AI"
 
+
+# =====================================================================
+# Security Tests
+# =====================================================================
+
+def test_safe_formula_eval_valid():
+    """Safe parser correctly evaluates a standard NDVI formula."""
+    import numpy as np
+    from app.services.safe_formula_eval import safe_eval_formula
+
+    rng = np.random.default_rng(1)
+    bands = {
+        'B02': rng.uniform(0.04, 0.12, (10, 10)),
+        'B03': rng.uniform(0.06, 0.18, (10, 10)),
+        'B04': rng.uniform(0.05, 0.22, (10, 10)),
+        'B08': rng.uniform(0.25, 0.65, (10, 10)),
+        'B11': rng.uniform(0.12, 0.35, (10, 10)),
+        'B12': rng.uniform(0.08, 0.28, (10, 10)),
+    }
+
+    result = safe_eval_formula("(B08 - B04) / (B08 + B04)", bands)
+    assert result.shape == (10, 10)
+    assert result.min() >= -1.0
+    assert result.max() <= 1.0
+
+
+def test_safe_formula_eval_blocks_import():
+    """Safe parser must reject __import__ or any non-arithmetic expression."""
+    import numpy as np
+    from app.services.safe_formula_eval import safe_eval_formula
+
+    bands = {b: np.ones((5, 5)) for b in ['B02','B03','B04','B08','B11','B12']}
+
+    # These should all raise ValueError or SyntaxError — never execute
+    dangerous = [
+        "__import__('os').system('id')",
+        "open('/etc/passwd').read()",
+        "[x for x in range(10)]",
+        "B08 if True else B04",
+        "B08 == B04",
+    ]
+    for expr in dangerous:
+        try:
+            safe_eval_formula(expr, bands)
+            raise AssertionError(f"Should have raised for: {expr!r}")
+        except (ValueError, SyntaxError):
+            pass  # expected — blocked
+
+
+def test_safe_formula_eval_blocks_unknown_name():
+    """Safe parser must reject variable names that aren't band identifiers."""
+    import numpy as np
+    from app.services.safe_formula_eval import safe_eval_formula
+
+    bands = {b: np.ones((5, 5)) for b in ['B02','B03','B04','B08','B11','B12']}
+
+    with pytest.raises((ValueError, SyntaxError)):
+        safe_eval_formula("os + B08", bands)
+
+
+def test_webhook_validator_allows_discord():
+    """Discord HTTPS URLs should pass validation."""
+    from app.services.webhook_validator import validate_webhook_url
+
+    url = "https://discord.com/api/webhooks/123456789/abcdefXYZ"
+    assert validate_webhook_url(url) == url
+
+
+def test_webhook_validator_allows_slack():
+    """Slack HTTPS hook URLs should pass validation."""
+    from app.services.webhook_validator import validate_webhook_url
+
+    url = "https://hooks.slack.com/services/T000/B000/xxxx"
+    assert validate_webhook_url(url) == url
+
+
+def test_webhook_validator_blocks_localhost():
+    """Localhost URLs must be rejected (SSRF prevention)."""
+    from app.services.webhook_validator import validate_webhook_url
+
+    with pytest.raises(ValueError, match="private|reserved|HTTPS"):
+        validate_webhook_url("http://localhost:9200/exfiltrate")
+
+
+def test_webhook_validator_blocks_internal_ip():
+    """RFC-1918 private IPs must be rejected."""
+    from app.services.webhook_validator import validate_webhook_url
+
+    with pytest.raises(ValueError):
+        validate_webhook_url("https://192.168.1.1/steal")
+
+
+def test_webhook_validator_blocks_aws_metadata():
+    """AWS metadata endpoint must be rejected."""
+    from app.services.webhook_validator import validate_webhook_url
+
+    with pytest.raises(ValueError):
+        validate_webhook_url("https://169.254.169.254/latest/meta-data/")
+
+
+def test_webhook_validator_blocks_plaintext_http():
+    """HTTP (non-HTTPS) must be rejected regardless of domain."""
+    from app.services.webhook_validator import validate_webhook_url
+
+    with pytest.raises(ValueError, match="HTTPS"):
+        validate_webhook_url("http://discord.com/api/webhooks/123/abc")
+
+
+def test_webhook_validator_blocks_unknown_domain():
+    """Unknown domains not on the allowlist must be rejected."""
+    from app.services.webhook_validator import validate_webhook_url
+
+    with pytest.raises(ValueError, match="allowlist"):
+        validate_webhook_url("https://evil-attacker.com/steal-data")
+
+
+def test_demo_seed_idempotent(tmp_path, monkeypatch):
+    """Calling seed_demo_data() twice must not raise or duplicate rows."""
+    import app.services.demo_seed as demo_seed_mod
+
+    # Override DB path to a writable temp dir for the test environment
+    test_db = str(tmp_path / "satquery_test.db")
+    monkeypatch.setattr(demo_seed_mod, "DB_PATH", test_db)
+
+    # Run twice — idempotency check
+    demo_seed_mod.seed_demo_data()
+    demo_seed_mod.seed_demo_data()
+
+    # Verify rows were inserted exactly once
+    import sqlite3
+    conn = sqlite3.connect(test_db)
+    hitl_count = conn.execute("SELECT COUNT(*) FROM hitl_feedback").fetchone()[0]
+    alert_count = conn.execute("SELECT COUNT(*) FROM sentinel_alerts").fetchone()[0]
+    conn.close()
+    assert hitl_count == 4   # exactly 4 seed rows, not 8
+    assert alert_count == 5  # exactly 5 seed rows, not 10
